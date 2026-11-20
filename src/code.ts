@@ -2,6 +2,10 @@ import { backgroundValue, type Config, type Item } from './config.js';
 import { cleanCss } from './custom-css.js';
 import { icons } from './icons.js';
 
+export const lightPalette = {
+  '--lg-nav-muted': '#293b60',
+} as const satisfies Record<string, string>;
+
 export const darkPalette = {
   '--lg-nav-opaque': '#293b5f',
   '--lg-nav-surface': '#293b5fbd',
@@ -50,7 +54,7 @@ export function htmlFor(config: Config): string {
 
 export function cssFor(config: Config): string {
   const lines = [`  --lg-nav-accent: ${config.accent};`];
-  if (config.theme === 'dark') for (const [name, value] of Object.entries(darkPalette)) lines.push(`  ${name}: ${value};`);
+  for (const [name, value] of Object.entries(config.theme === 'dark' ? darkPalette : lightPalette)) lines.push(`  ${name}: ${value};`);
   const custom = cleanCss(config.customCss, '#app-navbar').css;
   return `#app-navbar {\n${lines.join('\n')}\n}${custom ? `\n\n${custom}` : ''}`;
 }

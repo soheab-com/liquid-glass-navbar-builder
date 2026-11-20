@@ -5,7 +5,7 @@ import {
   backdrops, backgroundKinds, backgroundValue, decodeConfig, defaultConfig, encodeConfig, newId, positions, themes,
   type Config, type Item,
 } from './config.js';
-import { cssFor, darkPalette, htmlFor, scriptFor } from './code.js';
+import { cssFor, darkPalette, lightPalette, htmlFor, scriptFor } from './code.js';
 import { cleanCss, customCssLimit } from './custom-css.js';
 import { iconNames, icons, isIconName } from './icons.js';
 
@@ -56,7 +56,7 @@ function renderPreview(): void {
   const nav = holder.content.firstElementChild;
   if (!(nav instanceof HTMLElement)) return;
   nav.style.setProperty('--lg-nav-accent', config.accent);
-  if (config.theme === 'dark') for (const [name, value] of Object.entries(darkPalette)) nav.style.setProperty(name, value);
+  for (const [name, value] of Object.entries(config.theme === 'dark' ? darkPalette : lightPalette)) nav.style.setProperty(name, value);
   const ids = config.items.map((item) => item.id);
   const buttons = [...nav.querySelectorAll<HTMLButtonElement>('button')];
   buttons.forEach((button, index) => {
