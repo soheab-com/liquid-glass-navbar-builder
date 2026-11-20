@@ -66,13 +66,7 @@ export function scriptFor(config: Config): string {
   if (background) options.push(`  background: '${background}',`);
   if (config.transparency !== null) options.push(`  transparency: ${config.transparency},`);
   if (config.reorderable) options.push('  reorderable: true,');
-  options.push(
-    '  onSelect(button) {',
-    "    nav.querySelector('[aria-current=\"page\"]')?.removeAttribute('aria-current');",
-    "    button.setAttribute('aria-current', 'page');",
-    '    navbar.sync();',
-    '  },',
-  );
+  options.push('  onSelect(button) {', '    // Show the page for this tab.', '  },');
   if (config.items.some((item) => item.action)) {
     options.push('  onAction(button) {', '    // Open the action this button stands for.', '  },');
   }
@@ -85,7 +79,7 @@ export function scriptFor(config: Config): string {
     '',
     "const nav = document.querySelector<HTMLElement>('#app-navbar');",
     "if (!nav) throw new Error('Missing #app-navbar.');",
-    'const navbar = mountLiquidGlassNavbar(nav, {',
+    'mountLiquidGlassNavbar(nav, {',
     ...options,
     '});',
   ].join('\n');

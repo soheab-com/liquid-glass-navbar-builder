@@ -76,11 +76,6 @@ function renderPreview(): void {
     reorderable: config.reorderable,
     ...(background === undefined ? {} : { background }),
     ...(config.transparency === null ? {} : { transparency: config.transparency }),
-    onSelect(button) {
-      nav.querySelector('[aria-current="page"]')?.removeAttribute('aria-current');
-      button.setAttribute('aria-current', 'page');
-      navbar?.sync();
-    },
     onAction(button) {
       announce(`${button.getAttribute('aria-label') ?? button.textContent?.trim() ?? 'Action'} pressed.`);
     },
