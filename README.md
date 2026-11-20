@@ -22,7 +22,7 @@ default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src
 
 ## Navbar package
 
-The builder uses the navbar from a checkout at `../liquid-glass-navbar` (see `package.json`).
+The builder installs the navbar from GitHub at a pinned release (see `package.json`). To try local navbar changes, run `npm link ../liquid-glass-navbar` with the navbar repo next to this one.
 
 ## Disclaimer
 
