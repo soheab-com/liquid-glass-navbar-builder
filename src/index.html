@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Navbar builder</title>
+<link rel="stylesheet" href="{{APP_CSS}}">
+<script type="module" src="{{APP_JS}}"></script>
+</head>
+<body>
+<header class="nb-top">
+  <h1>Navbar builder</h1>
+  <div class="nb-top-actions">
+    <span id="status" class="nb-status" role="status"></span>
+    <button type="button" id="reset" class="nb-button">Reset</button>
+    <button type="button" id="share" class="nb-button nb-primary">Copy link</button>
+  </div>
+</header>
+<main class="nb-layout">
+  <aside class="nb-panel" aria-label="Options">
+    <section>
+      <h2>Layout</h2>
+      <label class="nb-field">Position <select id="position"></select></label>
+      <label class="nb-check"><input type="checkbox" id="labels"> Labels</label>
+      <label class="nb-check"><input type="checkbox" id="sectioned"> Separate sections</label>
+      <label class="nb-check"><input type="checkbox" id="reorderable"> Reorderable</label>
+      <label class="nb-check nb-sub"><input type="checkbox" id="reorder-mode"> Drag to reorder in preview</label>
+    </section>
+    <section>
+      <h2>Look</h2>
+      <label class="nb-field">Theme <select id="theme"></select></label>
+      <label class="nb-field">Accent <input type="color" id="accent"></label>
+      <label class="nb-field">Background <select id="background"></select></label>
+      <label class="nb-field" data-show-for="solid gradient">Color <input type="color" id="color"></label>
+      <label class="nb-field" data-show-for="gradient">Second color <input type="color" id="color2"></label>
+      <label class="nb-field" data-show-for="gradient">Angle <input type="range" id="angle" min="0" max="360" step="5"> <output id="angle-value"></output></label>
+      <label class="nb-field">Transparency <input type="range" id="transparency" min="0" max="100"> <output id="transparency-value"></output></label>
+      <label class="nb-check nb-sub"><input type="checkbox" id="transparency-auto"> Use the theme default</label>
+      <label class="nb-field">Preview backdrop <select id="backdrop"></select></label>
+    </section>
+    <section>
+      <h2><label for="custom-css">Custom CSS</label></h2>
+      <textarea id="custom-css" class="nb-css" rows="7" spellcheck="false" aria-describedby="custom-css-help" placeholder=":scope { border-radius: 18px; }&#10;[data-navbar-label] { letter-spacing: .02em; }"></textarea>
+      <p id="custom-css-help" class="nb-hint">Applies to the navbar only. <code>:scope</code> is the navbar itself. Rules with <code>url()</code>, <code>@import</code> or escapes are left out.</p>
+      <p id="custom-css-note" class="nb-hint nb-warn" role="status"></p>
+    </section>
+    <section>
+      <div class="nb-section-head"><h2>Items</h2><button type="button" id="add-item" class="nb-button">Add item</button></div>
+      <ol id="items" class="nb-items"></ol>
+    </section>
+  </aside>
+  <section class="nb-preview" aria-label="Preview">
+    <div class="nb-device" role="group" aria-label="Device">
+      <button type="button" data-device="phone" aria-pressed="true">Phone</button>
+      <button type="button" data-device="tablet" aria-pressed="false">Tablet</button>
+      <button type="button" data-device="desktop" aria-pressed="false">Desktop</button>
+    </div>
+    <div id="frame" class="nb-frame" data-device="phone">
+      <div class="nb-content" aria-hidden="true">
+        <div class="nb-card nb-card--hero"></div>
+        <div class="nb-card"></div><div class="nb-card"></div>
+        <div class="nb-card nb-card--wide"></div><div class="nb-card"></div><div class="nb-card"></div>
+      </div>
+      <div id="stage"></div>
+    </div>
+  </section>
+  <section class="nb-code" aria-label="Code">
+    <div class="nb-code-head">
+      <div role="tablist" aria-label="Code format">
+        <button type="button" role="tab" data-code-tab="html">HTML</button>
+        <button type="button" role="tab" data-code-tab="ts">TypeScript</button>
+        <button type="button" role="tab" data-code-tab="css">CSS</button>
+      </div>
+      <button type="button" id="copy" class="nb-button">Copy</button>
+    </div>
+    <pre><code id="code"></code></pre>
+  </section>
+</main>
+</body>
+</html>

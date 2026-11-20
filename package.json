@@ -1,0 +1,16 @@
+{
+  "name": "liquid-glass-navbar-builder",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@soheab-com/liquid-glass-navbar": "file:../liquid-glass-navbar"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1",
+    "typescript": "5.9.3"
+  }
+}
