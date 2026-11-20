@@ -23,3 +23,7 @@ default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src
 ## Navbar package
 
 The builder uses the navbar from a checkout at `../liquid-glass-navbar` (see `package.json`).
+
+## Disclaimer
+
+Not affiliated with or endorsed by Apple Inc. Apple and iOS are trademarks of Apple Inc. Liquid Glass is the name Apple uses for its design style. This is an independent take on the look.
