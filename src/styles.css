@@ -18,6 +18,10 @@ h2 { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color:
 button, input, select { font: inherit; color: inherit; }
 
 .nb-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--nb-line); background: var(--nb-panel); }
+.nb-links { display: flex; gap: 14px; margin-right: auto; margin-left: 20px; font-size: .85rem; }
+.nb-links a { color: var(--nb-muted); text-decoration: none; }
+.nb-links a:hover { color: var(--nb-text); text-decoration: underline; }
+@media (max-width: 860px) { .nb-top { flex-wrap: wrap; } .nb-links { order: 3; width: 100%; margin: 0; } }
 .nb-top-actions { display: flex; align-items: center; gap: 8px; }
 .nb-status { color: var(--nb-muted); font-size: .85rem; }
 .nb-button { border: 1px solid var(--nb-line); background: var(--nb-panel); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
