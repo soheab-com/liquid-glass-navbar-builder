@@ -1,4 +1,4 @@
-import type { NavbarPosition } from '@soheab-com/liquid-glass-navbar';
+import type { EqualWidthOverflow, NavbarColors, NavbarPosition } from '@soheab-com/liquid-glass-navbar';
 import { customCssLimit } from './custom-css.js';
 import { isIconName, type IconName } from './icons.js';
 
@@ -20,7 +20,15 @@ export interface Config {
   position: NavbarPosition;
   theme: Theme;
   accent: string;
+  /** Colour of tabs that aren't selected; null uses the theme's. */
+  unselected: string | null;
+  /** Icons get their own colours (below) instead of following the label. */
+  iconColors: boolean;
+  selectedIcon: string;
+  unselectedIcon: string;
   labels: boolean;
+  equalWidth: boolean;
+  equalOverflow: EqualWidthOverflow;
   sectioned: boolean;
   reorderable: boolean;
   background: BackgroundKind;
@@ -37,6 +45,7 @@ export const positions: readonly NavbarPosition[] = ['bottom', 'top', 'left', 'r
 export const backgroundKinds: readonly BackgroundKind[] = ['theme', 'solid', 'gradient'];
 export const themes: readonly Theme[] = ['light', 'dark'];
 export const backdrops: readonly Backdrop[] = ['aurora', 'photo', 'grid', 'plain'];
+export const equalOverflows: readonly EqualWidthOverflow[] = ['natural', 'truncate', 'grow'];
 
 let counter = 0;
 export const newId = (): string => `item-${Date.now().toString(36)}-${(counter++).toString(36)}`;
@@ -49,7 +58,13 @@ export const defaultConfig = (): Config => ({
   position: 'bottom',
   theme: 'light',
   accent: '#2152a5',
+  unselected: null,
+  iconColors: false,
+  selectedIcon: '#7048e8',
+  unselectedIcon: '#868e96',
   labels: true,
+  equalWidth: false,
+  equalOverflow: 'natural',
   sectioned: true,
   reorderable: false,
   background: 'theme',
@@ -101,7 +116,13 @@ export function parseConfig(value: unknown): Config {
     position: pick(positions, raw.position, base.position),
     theme: pick(themes, raw.theme, base.theme),
     accent: hex(raw.accent, base.accent),
+    unselected: raw.unselected === null || raw.unselected === undefined ? null : hex(raw.unselected, '#48566d'),
+    iconColors: bool(raw.iconColors, base.iconColors),
+    selectedIcon: hex(raw.selectedIcon, base.selectedIcon),
+    unselectedIcon: hex(raw.unselectedIcon, base.unselectedIcon),
     labels: bool(raw.labels, base.labels),
+    equalWidth: bool(raw.equalWidth, base.equalWidth),
+    equalOverflow: pick(equalOverflows, raw.equalOverflow, base.equalOverflow),
     sectioned: bool(raw.sectioned, base.sectioned),
     reorderable: bool(raw.reorderable, base.reorderable),
     background: pick(backgroundKinds, raw.background, base.background),
@@ -114,6 +135,17 @@ export function parseConfig(value: unknown): Config {
     items: items.length > 0 ? items : base.items,
   };
 }
+
+/** The navbar's `colors` option for the choices beyond the accent (which the CSS sets). */
+export const colorsValue = (config: Config): NavbarColors | undefined => {
+  const colors: NavbarColors = {};
+  if (config.unselected) colors.unselected = config.unselected;
+  if (config.iconColors) {
+    colors.selectedIcon = config.selectedIcon;
+    colors.unselectedIcon = config.unselectedIcon;
+  }
+  return Object.keys(colors).length > 0 ? colors : undefined;
+};
 
 export const backgroundValue = (config: Config): string | undefined => {
   if (config.background === 'solid') return config.color;

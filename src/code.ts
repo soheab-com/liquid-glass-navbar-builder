@@ -1,4 +1,4 @@
-import { backgroundValue, type Config, type Item } from './config.js';
+import { backgroundValue, colorsValue, type Config, type Item } from './config.js';
 import { cleanCss } from './custom-css.js';
 import { icons } from './icons.js';
 
@@ -62,6 +62,16 @@ export function cssFor(config: Config): string {
 export function scriptFor(config: Config): string {
   const options = [`  position: '${config.position}',`];
   if (!config.labels) options.push('  labels: false,');
+  if (config.equalWidth) {
+    options.push('  equalWidth: true,');
+    if (config.equalOverflow !== 'natural') options.push(`  equalWidthOverflow: '${config.equalOverflow}',`);
+  }
+  const colors = colorsValue(config);
+  if (colors) {
+    options.push('  colors: {');
+    for (const [name, value] of Object.entries(colors)) options.push(`    ${name}: '${value}',`);
+    options.push('  },');
+  }
   const background = backgroundValue(config);
   if (background) options.push(`  background: '${background}',`);
   if (config.transparency !== null) options.push(`  transparency: ${config.transparency},`);

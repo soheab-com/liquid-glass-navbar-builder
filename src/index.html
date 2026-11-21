@@ -27,6 +27,8 @@
       <h2>Layout</h2>
       <label class="nb-field">Position <select id="position"></select></label>
       <label class="nb-check"><input type="checkbox" id="labels"> Labels</label>
+      <label class="nb-check"><input type="checkbox" id="equal-width"> Equal width tabs</label>
+      <label class="nb-field nb-sub" id="equal-overflow-row">When it doesn't fit <select id="equal-overflow"><option value="natural">Use natural widths</option><option value="truncate">Cut off labels</option><option value="grow">Make the bar wider</option></select></label>
       <label class="nb-check"><input type="checkbox" id="sectioned"> Separate sections</label>
       <label class="nb-check"><input type="checkbox" id="reorderable"> Reorderable</label>
       <label class="nb-check nb-sub"><input type="checkbox" id="reorder-mode"> Drag to reorder in preview</label>
@@ -34,7 +36,12 @@
     <section>
       <h2>Look</h2>
       <label class="nb-field">Theme <select id="theme"></select></label>
-      <label class="nb-field">Accent <input type="color" id="accent"></label>
+      <label class="nb-field">Selected color <input type="color" id="accent"></label>
+      <label class="nb-field">Unselected color <input type="color" id="unselected"></label>
+      <label class="nb-check nb-sub"><input type="checkbox" id="unselected-auto"> Use the theme default</label>
+      <label class="nb-check"><input type="checkbox" id="icon-colors"> Separate icon colors</label>
+      <label class="nb-field nb-sub" data-icon-colors>Selected icon <input type="color" id="selected-icon"></label>
+      <label class="nb-field nb-sub" data-icon-colors>Unselected icon <input type="color" id="unselected-icon"></label>
       <label class="nb-field">Background <select id="background"></select></label>
       <label class="nb-field" data-show-for="solid gradient">Color <input type="color" id="color"></label>
       <label class="nb-field" data-show-for="gradient">Second color <input type="color" id="color2"></label>

@@ -3,7 +3,7 @@ import '@soheab-com/liquid-glass-navbar/navbar.css';
 import './styles.css';
 import {
   backdrops, backgroundKinds, backgroundValue, decodeConfig, defaultConfig, encodeConfig, newId, positions, themes,
-  type Config, type Item,
+  colorsValue, equalOverflows, type Config, type Item,
 } from './config.js';
 import { cssFor, darkPalette, lightPalette, htmlFor, scriptFor } from './code.js';
 import { cleanCss, customCssLimit } from './custom-css.js';
@@ -70,12 +70,16 @@ function renderPreview(): void {
     ? `${custom.removed} rule${custom.removed === 1 ? ' was' : 's were'} left out: only plain style rules work, without url(), @import or escapes.`
     : '';
   const background = backgroundValue(config);
+  const colors = colorsValue(config);
   navbar = mountLiquidGlassNavbar(nav, {
     position: config.position,
     labels: config.labels,
+    equalWidth: config.equalWidth,
+    equalWidthOverflow: config.equalOverflow,
     reorderable: config.reorderable,
     ...(background === undefined ? {} : { background }),
     ...(config.transparency === null ? {} : { transparency: config.transparency }),
+    ...(colors === undefined ? {} : { colors }),
     onAction(button) {
       announce(`${button.getAttribute('aria-label') ?? button.textContent?.trim() ?? 'Action'} pressed.`);
     },
@@ -241,6 +245,17 @@ function syncControls(): void {
   element('#background', HTMLSelectElement).value = config.background;
   element('#backdrop', HTMLSelectElement).value = config.backdrop;
   element('#labels', HTMLInputElement).checked = config.labels;
+  element('#equal-width', HTMLInputElement).checked = config.equalWidth;
+  element('#equal-overflow', HTMLSelectElement).value = config.equalOverflow;
+  element('#equal-overflow-row', HTMLElement).hidden = !config.equalWidth;
+  const unselectedAuto = config.unselected === null;
+  element('#unselected-auto', HTMLInputElement).checked = unselectedAuto;
+  element('#unselected', HTMLInputElement).disabled = unselectedAuto;
+  element('#unselected', HTMLInputElement).value = config.unselected ?? (config.theme === 'dark' ? '#c9d4e6' : '#48566d');
+  element('#icon-colors', HTMLInputElement).checked = config.iconColors;
+  element('#selected-icon', HTMLInputElement).value = config.selectedIcon;
+  element('#unselected-icon', HTMLInputElement).value = config.unselectedIcon;
+  for (const row of document.querySelectorAll<HTMLElement>('[data-icon-colors]')) row.hidden = !config.iconColors;
   element('#sectioned', HTMLInputElement).checked = config.sectioned;
   element('#reorderable', HTMLInputElement).checked = config.reorderable;
   element('#accent', HTMLInputElement).value = config.accent;
@@ -270,6 +285,24 @@ bindCheck('reorderable', 'reorderable');
 bindColor('accent', 'accent');
 bindColor('color', 'color');
 bindColor('color2', 'color2');
+
+const equalWidth = element('#equal-width', HTMLInputElement);
+equalWidth.addEventListener('change', () => update({ equalWidth: equalWidth.checked }));
+const equalOverflow = element('#equal-overflow', HTMLSelectElement);
+equalOverflow.addEventListener('change', () => {
+  const value = equalOverflows.find((entry) => entry === equalOverflow.value);
+  if (value) update({ equalOverflow: value });
+});
+const unselected = element('#unselected', HTMLInputElement);
+unselected.addEventListener('input', () => update({ unselected: unselected.value }));
+const unselectedAuto = element('#unselected-auto', HTMLInputElement);
+unselectedAuto.addEventListener('change', () => update({ unselected: unselectedAuto.checked ? null : unselected.value }));
+const iconColors = element('#icon-colors', HTMLInputElement);
+iconColors.addEventListener('change', () => update({ iconColors: iconColors.checked }));
+const selectedIcon = element('#selected-icon', HTMLInputElement);
+selectedIcon.addEventListener('input', () => update({ selectedIcon: selectedIcon.value }));
+const unselectedIcon = element('#unselected-icon', HTMLInputElement);
+unselectedIcon.addEventListener('input', () => update({ unselectedIcon: unselectedIcon.value }));
 
 const angle = element('#angle', HTMLInputElement);
 angle.addEventListener('input', () => update({ angle: angle.valueAsNumber }));
