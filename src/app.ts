@@ -1,13 +1,22 @@
 import { mountLiquidGlassNavbar, type LiquidGlassNavbar } from '@soheab-com/liquid-glass-navbar';
 import '@soheab-com/liquid-glass-navbar/navbar.css';
+import highlight from 'highlight.js/lib/core';
+import css from 'highlight.js/lib/languages/css';
+import typescript from 'highlight.js/lib/languages/typescript';
+import xml from 'highlight.js/lib/languages/xml';
 import './styles.css';
 import {
   backdrops, backgroundKinds, backgroundValue, decodeConfig, defaultConfig, encodeConfig, newId, positions, themes,
-  colorsValue, equalOverflows, type Config, type Item,
+  colorsValue, equalOverflows, type Config, type Item, badgeValue, overflowValue, layouts, overflowChoices,
+  expandSurfaces, maxItems,
 } from './config.js';
 import { cssFor, darkPalette, lightPalette, htmlFor, scriptFor } from './code.js';
 import { cleanCss, customCssLimit } from './custom-css.js';
 import { iconNames, icons, isIconName } from './icons.js';
+
+highlight.registerLanguage('html', xml);
+highlight.registerLanguage('ts', typescript);
+highlight.registerLanguage('css', css);
 
 const storageKey = 'lg-navbar-builder:config';
 
@@ -18,6 +27,7 @@ const element = <T extends Element>(selector: string, type: abstract new () => T
 };
 
 const frame = element('#frame', HTMLElement);
+const sample = element('#frame > .nb-content', HTMLElement);
 const stage = element('#stage', HTMLElement);
 const itemList = element('#items', HTMLOListElement);
 const codeOutput = element('#code', HTMLElement);
@@ -55,8 +65,6 @@ function renderPreview(): void {
   holder.innerHTML = htmlFor(config);
   const nav = holder.content.firstElementChild;
   if (!(nav instanceof HTMLElement)) return;
-  nav.style.setProperty('--lg-nav-accent', config.accent);
-  for (const [name, value] of Object.entries(config.theme === 'dark' ? darkPalette : lightPalette)) nav.style.setProperty(name, value);
   const ids = config.items.map((item) => item.id);
   const buttons = [...nav.querySelectorAll<HTMLButtonElement>('button')];
   buttons.forEach((button, index) => {
@@ -79,8 +87,19 @@ function renderPreview(): void {
     reorderable: config.reorderable,
     ...(background === undefined ? {} : { background }),
     ...(config.transparency === null ? {} : { transparency: config.transparency }),
-    ...(colors === undefined ? {} : { colors }),
+    colors,
+    layout: config.layout,
+    ...(config.overflow !== 'none' && config.maxRows !== null && config.layout !== 'row' ? { maxRows: config.maxRows } : {}),
+    ...(overflowValue(config) ? { overflow: { ...overflowValue(config), boundary: frame } } : {}),
+    ...(config.scrollCompact ? { scrollCompact: { source: sample } } : {}),
+    ...(config.magnify ? { magnify: true } : {}),
+    ...(config.contrast ? { contrast: { adaptiveTint: config.adaptiveTint } } : {}),
     onAction(button) {
+      if (button.dataset.context === 'done') {
+        navbar?.hideContextActions();
+        announce('Navigation restored.');
+        return;
+      }
       announce(`${button.getAttribute('aria-label') ?? button.textContent?.trim() ?? 'Action'} pressed.`);
     },
     onReorder(order) {
@@ -99,7 +118,35 @@ function renderPreview(): void {
       renderCode();
     },
   });
+  const palette = config.theme === 'dark' ? darkPalette : lightPalette;
+  for (const [name, value] of Object.entries(palette)) {
+    if (!nav.style.getPropertyValue(name)) nav.style.setProperty(name, value);
+  }
   navbar.setReorderMode(config.reorderable && element('#reorder-mode', HTMLInputElement).checked);
+  for (const button of buttons) {
+    const item = config.items.find((entry) => entry.id === button.dataset.itemId);
+    const badge = item ? badgeValue(item.badge) : null;
+    if (badge) navbar.setBadge(button, { ...badge, label: 'dot' in badge ? 'New' : `${badge.count} new` });
+  }
+  element('#try-context', HTMLButtonElement).textContent = 'Show context actions';
+}
+
+function contextNodes(): HTMLElement[] {
+  const make = (label: string, icon: keyof typeof icons, context?: string): HTMLButtonElement => {
+    const holder = document.createElement('template');
+    holder.innerHTML = `<button type="button" data-navbar-action><svg data-navbar-icon viewBox="0 0 24 24" aria-hidden="true"><path d="${icons[icon]}" /></svg><span data-navbar-label></span></button>`;
+    const button = holder.content.firstElementChild as HTMLButtonElement;
+    button.querySelector('span')!.textContent = label;
+    if (context) button.dataset.context = context;
+    return button;
+  };
+  const actions = document.createElement('div');
+  actions.setAttribute('data-navbar-section', '');
+  actions.append(make('Share', 'star'), make('Move', 'map'));
+  const done = document.createElement('div');
+  done.setAttribute('data-navbar-section', '');
+  done.append(make('Done', 'home', 'done'));
+  return [actions, done];
 }
 
 function sectionOrder(): string[] {
@@ -108,7 +155,7 @@ function sectionOrder(): string[] {
 
 function renderCode(): void {
   const text = codeTab === 'html' ? htmlFor(config) : codeTab === 'ts' ? scriptFor(config) : cssFor(config);
-  codeOutput.textContent = text;
+  codeOutput.innerHTML = highlight.highlight(text, { language: codeTab }).value;
   for (const tab of document.querySelectorAll<HTMLButtonElement>('[data-code-tab]')) {
     tab.setAttribute('aria-selected', String(tab.dataset.codeTab === codeTab));
   }
@@ -120,6 +167,14 @@ function update(change: Partial<Config>, options: { items?: boolean } = {}): voi
   if (options.items) renderItems();
   syncControls();
   renderPreview();
+  renderCode();
+}
+
+function updateTransparency(value: Config['transparency']): void {
+  config = { ...config, transparency: value };
+  save();
+  syncControls();
+  navbar?.setTransparency(value ?? undefined);
   renderCode();
 }
 
@@ -136,6 +191,16 @@ function checkbox(label: string, checked: boolean, onChange: (checked: boolean) 
   input.addEventListener('change', () => onChange(input.checked));
   wrapper.append(input, label);
   return wrapper;
+}
+
+function choice(label: string, values: readonly (readonly [string, string])[], current: string, onChange: (value: string) => void): HTMLSelectElement {
+  const select = document.createElement('select');
+  select.setAttribute('aria-label', label);
+  select.append(...values.map(([value, text]) => new Option(text, value)));
+  if (!values.some(([value]) => value === current)) select.append(new Option(current, current));
+  select.value = current;
+  select.addEventListener('change', () => onChange(select.value));
+  return select;
 }
 
 function iconButton(text: string, label: string, onClick: () => void, disabled = false): HTMLButtonElement {
@@ -200,10 +265,16 @@ function renderItems(): void {
     flags.className = 'nb-item-flags';
     flags.append(
       icon,
-      checkbox('Icon', item.showIcon, (checked) => updateItem(item.id, { showIcon: checked })),
-      checkbox('Label', item.showLabel, (checked) => updateItem(item.id, { showLabel: checked })),
+      checkbox('Hide icon', !item.showIcon, (checked) => updateItem(item.id, { showIcon: !checked })),
+      checkbox('Hide label', !item.showLabel, (checked) => updateItem(item.id, { showLabel: !checked })),
       checkbox('Action', item.action, (checked) => updateItem(item.id, { action: checked })),
+      choice('Badge', [['', 'No badge'], ['dot', 'Dot'], ['3', 'Count 3'], ['12', 'Count 12'], ['120', 'Count 120']], item.badge,
+        (value) => updateItem(item.id, { badge: value })),
     );
+    if (config.layout !== 'row') {
+      flags.append(choice('Row', [['0', 'Auto row'], ['1', 'Row 1'], ['2', 'Row 2'], ['3', 'Row 3']], String(item.row),
+        (value) => updateItem(item.id, { row: Number(value) })));
+    }
     if (config.sectioned) {
       flags.append(checkbox('Own section', item.section === 1, (checked) => updateItem(item.id, { section: checked ? 1 : 0 })));
     }
@@ -234,9 +305,13 @@ function bindCheck(id: string, key: 'labels' | 'sectioned' | 'reorderable'): voi
   input.addEventListener('change', () => update({ [key]: input.checked } as Pick<Config, typeof key>, { items: key === 'sectioned' }));
 }
 
-function bindColor(id: string, key: 'accent' | 'color' | 'color2'): void {
+function bindColor(id: string, key: 'accent' | 'color' | 'color2' | 'unselected' | 'selectedIcon' | 'unselectedIcon'): void {
   const input = element(`#${id}`, HTMLInputElement);
-  input.addEventListener('input', () => update({ [key]: input.value } as Pick<Config, typeof key>));
+  const apply = (): void => {
+    if (input.value !== config[key]) update({ [key]: input.value } as Pick<Config, typeof key>);
+  };
+  input.addEventListener('input', apply);
+  input.addEventListener('change', apply);
 }
 
 function syncControls(): void {
@@ -250,8 +325,9 @@ function syncControls(): void {
   element('#equal-overflow-row', HTMLElement).hidden = !config.equalWidth;
   const unselectedAuto = config.unselected === null;
   element('#unselected-auto', HTMLInputElement).checked = unselectedAuto;
-  element('#unselected', HTMLInputElement).disabled = unselectedAuto;
-  element('#unselected', HTMLInputElement).value = config.unselected ?? (config.theme === 'dark' ? '#c9d4e6' : '#48566d');
+  element('#unselected-color-row', HTMLElement).hidden = unselectedAuto;
+  const palette = config.theme === 'dark' ? darkPalette : lightPalette;
+  element('#unselected', HTMLInputElement).value = config.unselected ?? palette['--lg-nav-muted'];
   element('#icon-colors', HTMLInputElement).checked = config.iconColors;
   element('#selected-icon', HTMLInputElement).value = config.selectedIcon;
   element('#unselected-icon', HTMLInputElement).value = config.unselectedIcon;
@@ -266,10 +342,27 @@ function syncControls(): void {
   const auto = config.transparency === null;
   element('#transparency-auto', HTMLInputElement).checked = auto;
   const slider = element('#transparency', HTMLInputElement);
-  slider.disabled = auto;
   slider.value = String(config.transparency ?? 40);
   element('#transparency-value', HTMLOutputElement).value = auto ? 'Theme' : `${config.transparency}%`;
-  element('#reorder-mode', HTMLInputElement).disabled = !config.reorderable;
+  element('#reorder-mode-row', HTMLElement).hidden = !config.reorderable;
+  const vertical = config.position === 'left' || config.position === 'right';
+  element('#layout', HTMLSelectElement).value = config.layout;
+  element('#layout', HTMLSelectElement).disabled = vertical;
+  element('#overflow', HTMLSelectElement).value = config.overflow;
+  element('#overflow', HTMLSelectElement).disabled = vertical;
+  element('#expand-surface', HTMLSelectElement).value = config.expandSurface;
+  element('#expand-surface-row', HTMLElement).hidden = config.overflow !== 'expand';
+  element('#max-rows', HTMLSelectElement).value = config.maxRows === null ? '' : String(config.maxRows);
+  element('#max-rows-row', HTMLElement).hidden = config.overflow === 'none' || config.layout === 'row';
+  element('#max-visible', HTMLSelectElement).value = config.maxVisible === null ? '' : String(config.maxVisible);
+  element('#max-visible-row', HTMLElement).hidden = config.overflow === 'none';
+  element('#scroll-compact', HTMLInputElement).checked = config.scrollCompact;
+  element('#contrast', HTMLInputElement).checked = config.contrast;
+  element('#adaptive-tint', HTMLInputElement).checked = config.adaptiveTint;
+  element('#adaptive-tint-row', HTMLElement).hidden = !config.contrast;
+  element('#context-actions', HTMLInputElement).checked = config.contextActions;
+  element('#magnify', HTMLInputElement).checked = config.magnify;
+  element('#try-context', HTMLButtonElement).hidden = !config.contextActions;
   for (const row of document.querySelectorAll<HTMLElement>('[data-show-for]')) {
     row.hidden = !(row.dataset.showFor ?? '').split(' ').includes(config.background);
   }
@@ -294,34 +387,106 @@ equalOverflow.addEventListener('change', () => {
   if (value) update({ equalOverflow: value });
 });
 const unselected = element('#unselected', HTMLInputElement);
-unselected.addEventListener('input', () => update({ unselected: unselected.value }));
+bindColor('unselected', 'unselected');
 const unselectedAuto = element('#unselected-auto', HTMLInputElement);
 unselectedAuto.addEventListener('change', () => update({ unselected: unselectedAuto.checked ? null : unselected.value }));
 const iconColors = element('#icon-colors', HTMLInputElement);
 iconColors.addEventListener('change', () => update({ iconColors: iconColors.checked }));
-const selectedIcon = element('#selected-icon', HTMLInputElement);
-selectedIcon.addEventListener('input', () => update({ selectedIcon: selectedIcon.value }));
-const unselectedIcon = element('#unselected-icon', HTMLInputElement);
-unselectedIcon.addEventListener('input', () => update({ unselectedIcon: unselectedIcon.value }));
+bindColor('selected-icon', 'selectedIcon');
+bindColor('unselected-icon', 'unselectedIcon');
+
+function bindChoice<K extends 'layout' | 'overflow' | 'expandSurface'>(id: string, key: K, values: readonly Config[K][]): void {
+  const select = element(`#${id}`, HTMLSelectElement);
+  select.addEventListener('change', () => {
+    const value = values.find((entry) => entry === select.value);
+    if (value !== undefined) update({ [key]: value } as Partial<Config>, { items: key === 'layout' });
+  });
+}
+bindChoice('layout', 'layout', layouts);
+bindChoice('overflow', 'overflow', overflowChoices);
+bindChoice('expand-surface', 'expandSurface', expandSurfaces);
+for (const [id, key] of [['max-rows', 'maxRows'], ['max-visible', 'maxVisible']] as const) {
+  const select = element(`#${id}`, HTMLSelectElement);
+  select.addEventListener('change', () => update({ [key]: select.value ? Number(select.value) : null }));
+}
+for (const [id, key] of [['scroll-compact', 'scrollCompact'], ['contrast', 'contrast'], ['adaptive-tint', 'adaptiveTint'], ['context-actions', 'contextActions'], ['magnify', 'magnify']] as const) {
+  const input = element(`#${id}`, HTMLInputElement);
+  input.addEventListener('change', () => update({ [key]: input.checked }));
+}
+element('#try-context', HTMLButtonElement).addEventListener('click', (event) => {
+  const button = event.currentTarget as HTMLButtonElement;
+  if (navbar?.contextActive) {
+    navbar.hideContextActions();
+    button.textContent = 'Show context actions';
+  } else {
+    navbar?.showContextActions(contextNodes(), { label: 'Selection actions' });
+    button.textContent = 'Restore navigation';
+  }
+});
 
 const angle = element('#angle', HTMLInputElement);
 angle.addEventListener('input', () => update({ angle: angle.valueAsNumber }));
 const transparency = element('#transparency', HTMLInputElement);
-transparency.addEventListener('input', () => update({ transparency: transparency.valueAsNumber }));
+transparency.addEventListener('input', () => updateTransparency(transparency.valueAsNumber));
 const transparencyAuto = element('#transparency-auto', HTMLInputElement);
-transparencyAuto.addEventListener('change', () => update({ transparency: transparencyAuto.checked ? null : transparency.valueAsNumber }));
+transparencyAuto.addEventListener('change', () => updateTransparency(transparencyAuto.checked ? null : transparency.valueAsNumber));
 element('#reorder-mode', HTMLInputElement).addEventListener('change', renderPreview);
 
 element('#add-item', HTMLButtonElement).addEventListener('click', () => {
-  if (config.items.length >= 12) return announce('A navbar holds up to 12 items.');
-  update({ items: [...config.items, { id: newId(), label: 'New', icon: 'star', showIcon: true, showLabel: true, action: false, section: 0 }] }, { items: true });
+  if (config.items.length >= maxItems) return announce(`A navbar holds up to ${maxItems} items.`);
+  update({ items: [...config.items, { id: newId(), label: 'New', icon: 'star', showIcon: true, showLabel: true, action: false, section: 0, row: 0, badge: '' }] }, { items: true });
+});
+
+const presetSelect = element('#preset', HTMLSelectElement);
+const presetButton = element('#apply-preset', HTMLButtonElement);
+presetSelect.addEventListener('change', () => {
+  presetButton.disabled = !presetSelect.value;
+});
+presetButton.addEventListener('click', async () => {
+  if (!presetSelect.value) return;
+
+  const previousConfig = config;
+  const presetId = presetSelect.value;
+  const label = presetSelect.selectedOptions[0]?.textContent ?? 'Preset';
+  presetButton.disabled = true;
+  presetSelect.disabled = true;
+  presetButton.textContent = 'Loading…';
+  try {
+    const { loadPreset } = await import('./presets.js');
+    const preset = loadPreset(presetId);
+    if (!preset || config !== previousConfig) return;
+    clearTimeout(cssTimer);
+    customCss.value = preset.customCss;
+    element('#reorder-mode', HTMLInputElement).checked = false;
+    sample.scrollTop = 0;
+    update(preset, { items: true });
+    announce(`${label} applied.`);
+  } catch {
+    announce('Could not load the preset. Reload and try again.');
+  } finally {
+    presetSelect.disabled = false;
+    presetButton.disabled = !presetSelect.value;
+    presetButton.textContent = 'Apply';
+  }
 });
 
 element('#reset', HTMLButtonElement).addEventListener('click', () => {
+  clearTimeout(cssTimer);
   config = defaultConfig();
+  presetSelect.value = '';
+  presetButton.disabled = true;
+  codeTab = 'html';
+  element('.nb-code', HTMLDetailsElement).open = true;
+  element('#reorder-mode', HTMLInputElement).checked = false;
+  element<HTMLButtonElement>('.nb-device button[data-device="phone"]', HTMLButtonElement).click();
+  sample.scrollTop = 0;
+  for (const section of document.querySelectorAll<HTMLDetailsElement>('.nb-panel details')) {
+    section.open = section.hasAttribute('data-default-open');
+  }
   customCss.value = '';
   update({}, { items: true });
-  announce('Reset to the default navbar.');
+  window.scrollTo(0, 0);
+  announce('Restored all defaults.');
 });
 
 element('#share', HTMLButtonElement).addEventListener('click', async () => {
@@ -344,10 +509,11 @@ for (const tab of document.querySelectorAll<HTMLButtonElement>('[data-code-tab]'
   });
 }
 
-for (const button of document.querySelectorAll<HTMLButtonElement>('[data-device]')) {
+const deviceButtons = document.querySelectorAll<HTMLButtonElement>('.nb-device button[data-device]');
+for (const button of deviceButtons) {
   button.addEventListener('click', () => {
     frame.dataset.device = button.dataset.device ?? 'phone';
-    for (const other of document.querySelectorAll<HTMLButtonElement>('[data-device]')) {
+    for (const other of deviceButtons) {
       other.setAttribute('aria-pressed', String(other === button));
     }
     navbar?.sync();

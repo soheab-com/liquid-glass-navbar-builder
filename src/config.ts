@@ -1,4 +1,4 @@
-import type { EqualWidthOverflow, NavbarColors, NavbarPosition } from '@soheab-com/liquid-glass-navbar';
+import type { EqualWidthOverflow, NavbarColors, NavbarLayout, NavbarPosition } from '@soheab-com/liquid-glass-navbar';
 import { customCssLimit } from './custom-css.js';
 import { isIconName, type IconName } from './icons.js';
 
@@ -10,7 +10,14 @@ export interface Item {
   showLabel: boolean;
   action: boolean;
   section: number;
+  /** A manual row (1-3) for multi-row layouts; 0 lets the bar decide. */
+  row: number;
+  /** '' for none, 'dot', or a count. */
+  badge: string;
 }
+
+export type OverflowChoice = 'none' | 'menu' | 'expand';
+export type ExpandSurface = 'shared' | 'individual';
 
 export type BackgroundKind = 'theme' | 'solid' | 'gradient';
 export type Theme = 'light' | 'dark';
@@ -38,6 +45,16 @@ export interface Config {
   transparency: number | null;
   backdrop: Backdrop;
   customCss: string;
+  layout: NavbarLayout;
+  maxRows: number | null;
+  overflow: OverflowChoice;
+  expandSurface: ExpandSurface;
+  maxVisible: number | null;
+  scrollCompact: boolean;
+  contrast: boolean;
+  adaptiveTint: boolean;
+  contextActions: boolean;
+  magnify: boolean;
   items: Item[];
 }
 
@@ -46,12 +63,16 @@ export const backgroundKinds: readonly BackgroundKind[] = ['theme', 'solid', 'gr
 export const themes: readonly Theme[] = ['light', 'dark'];
 export const backdrops: readonly Backdrop[] = ['aurora', 'photo', 'grid', 'plain'];
 export const equalOverflows: readonly EqualWidthOverflow[] = ['natural', 'truncate', 'grow'];
+export const layouts: readonly NavbarLayout[] = ['row', 'wrap', 'rows'];
+export const overflowChoices: readonly OverflowChoice[] = ['none', 'menu', 'expand'];
+export const expandSurfaces: readonly ExpandSurface[] = ['shared', 'individual'];
+export const maxItems = 16;
 
 let counter = 0;
 export const newId = (): string => `item-${Date.now().toString(36)}-${(counter++).toString(36)}`;
 
 const item = (label: string, icon: IconName | null, extra: Partial<Item> = {}): Item => ({
-  id: newId(), label, icon, showIcon: icon !== null, showLabel: true, action: false, section: 0, ...extra,
+  id: newId(), label, icon, showIcon: icon !== null, showLabel: true, action: false, section: 0, row: 0, badge: '', ...extra,
 });
 
 export const defaultConfig = (): Config => ({
@@ -72,8 +93,18 @@ export const defaultConfig = (): Config => ({
   color2: '#eadcff',
   angle: 135,
   transparency: null,
-  backdrop: 'aurora',
+  backdrop: 'photo',
   customCss: '',
+  layout: 'row',
+  maxRows: null,
+  overflow: 'none',
+  expandSurface: 'shared',
+  maxVisible: null,
+  scrollCompact: false,
+  contrast: false,
+  adaptiveTint: false,
+  contextActions: false,
+  magnify: false,
   items: [
     item('Home', 'home'),
     item('Schedule', 'calendar'),
@@ -103,6 +134,8 @@ function parseItem(value: unknown): Item | null {
     showLabel: bool(raw.showLabel, true),
     action: bool(raw.action, false),
     section: clamp(raw.section, 0, 1, 0),
+    row: clamp(raw.row, 0, 3, 0),
+    badge: typeof raw.badge === 'string' && /^(dot|[1-9][0-9]{0,2})?$/.test(raw.badge) ? raw.badge : '',
   };
 }
 
@@ -110,7 +143,7 @@ export function parseConfig(value: unknown): Config {
   const raw = record(value);
   const base = defaultConfig();
   const items = Array.isArray(raw.items)
-    ? raw.items.map(parseItem).filter((entry): entry is Item => entry !== null).slice(0, 12)
+    ? raw.items.map(parseItem).filter((entry): entry is Item => entry !== null).slice(0, maxItems)
     : base.items;
   return {
     position: pick(positions, raw.position, base.position),
@@ -132,19 +165,29 @@ export function parseConfig(value: unknown): Config {
     transparency: raw.transparency === null ? null : clamp(raw.transparency, 0, 100, 40),
     backdrop: pick(backdrops, raw.backdrop, base.backdrop),
     customCss: typeof raw.customCss === 'string' ? raw.customCss.slice(0, customCssLimit) : '',
+    layout: pick(layouts, raw.layout, base.layout),
+    maxRows: raw.maxRows === null || raw.maxRows === undefined ? null : clamp(raw.maxRows, 1, 4, 2),
+    overflow: pick(overflowChoices, raw.overflow, base.overflow),
+    expandSurface: pick(expandSurfaces, raw.expandSurface, base.expandSurface),
+    maxVisible: raw.maxVisible === null || raw.maxVisible === undefined ? null : clamp(raw.maxVisible, 1, 12, 4),
+    scrollCompact: bool(raw.scrollCompact, base.scrollCompact),
+    contrast: bool(raw.contrast, base.contrast),
+    adaptiveTint: bool(raw.adaptiveTint, base.adaptiveTint),
+    contextActions: bool(raw.contextActions, base.contextActions),
+    magnify: bool(raw.magnify, base.magnify),
     items: items.length > 0 ? items : base.items,
   };
 }
 
 /** The navbar's `colors` option for the choices beyond the accent (which the CSS sets). */
-export const colorsValue = (config: Config): NavbarColors | undefined => {
-  const colors: NavbarColors = {};
+export const colorsValue = (config: Config): NavbarColors => {
+  const colors: NavbarColors = { selected: config.accent };
   if (config.unselected) colors.unselected = config.unselected;
   if (config.iconColors) {
     colors.selectedIcon = config.selectedIcon;
     colors.unselectedIcon = config.unselectedIcon;
   }
-  return Object.keys(colors).length > 0 ? colors : undefined;
+  return colors;
 };
 
 export const backgroundValue = (config: Config): string | undefined => {
@@ -168,3 +211,16 @@ export function decodeConfig(encoded: string): Config | null {
     return null;
   }
 }
+
+/** The navbar's `overflow` option, or undefined when More is off. */
+export const overflowValue = (config: Config): { style: 'menu' | 'expand'; surface?: ExpandSurface; maxVisible?: number } | undefined => {
+  if (config.overflow === 'none') return undefined;
+  return {
+    style: config.overflow,
+    ...(config.overflow === 'expand' && config.expandSurface !== 'shared' ? { surface: config.expandSurface } : {}),
+    ...(config.maxVisible === null ? {} : { maxVisible: config.maxVisible }),
+  };
+};
+
+export const badgeValue = (badge: string): { count: number } | { dot: true } | null =>
+  badge === 'dot' ? { dot: true } : badge ? { count: Number(badge) } : null;

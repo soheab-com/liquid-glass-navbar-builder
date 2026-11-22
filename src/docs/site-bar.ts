@@ -1,0 +1,291 @@
+import {
+  mountLiquidGlassNavbar, type LiquidGlassNavbar, type LiquidGlassNavbarOptions, type NavbarItem,
+} from '@soheab-com/liquid-glass-navbar';
+
+// The docs' own navigation: a main bar of groups and a second bar with the sections of the current group.
+// Both are the component itself, configured from the settings page and saved in this browser.
+
+export interface Group {
+  id: string;
+  label: string;
+  icon: string;
+  sections: readonly (readonly [id: string, label: string])[];
+}
+
+export const groups: readonly Group[] = [
+  { id: 'start', label: 'Start', icon: 'M3 10 12 3l9 7v10h-6v-6H9v6H3z', sections: [['introduction', 'Introduction'], ['install', 'Install'], ['quick-start', 'Quick start']] },
+  { id: 'basics', label: 'Basics', icon: 'M5 6h14M5 12h14M5 18h9', sections: [['structure', 'Structure'], ['links', 'Links'], ['position', 'Position'], ['icons-labels', 'Icons and labels'], ['equal-width', 'Equal width'], ['look', 'Colors and glass']] },
+  { id: 'interaction', label: 'Interaction', icon: 'M6 3l13 7-6 1.6L10.5 18z', sections: [['swiping', 'Swiping'], ['reordering', 'Reordering'], ['magnify', 'Magnify']] },
+  { id: 'layout', label: 'Layout', icon: 'M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z', sections: [['rows', 'Rows'], ['more', 'More']] },
+  { id: 'features', label: 'Features', icon: 'm12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z', sections: [['popovers', 'Popovers'], ['badges', 'Badges'], ['scroll-compact', 'Scroll compact'], ['context-actions', 'Context actions'], ['contrast', 'Contrast'], ['persistence', 'Saving the tab']] },
+  { id: 'reference', label: 'Reference', icon: 'M6 3h10a2 2 0 0 1 2 2v16l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2zm3 5h6m-6 4h6', sections: [['options', 'Options'], ['methods', 'Methods'], ['attributes', 'Attributes'], ['css', 'CSS variables'], ['accessibility', 'Accessibility'], ['browsers', 'Browsers']] },
+];
+const settingsIcon = 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-12v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1';
+
+export type Position = 'bottom' | 'top' | 'left' | 'right';
+
+export interface SiteBarSettings {
+  position: Position;
+  labels: boolean;
+  sectionBar: boolean;
+  settingsItem: boolean;
+  separateSettings: boolean;
+  layout: 'row' | 'wrap' | 'rows';
+  maxRows: number;
+  overflow: 'off' | 'menu' | 'expand';
+  overflowSurface: 'shared' | 'individual';
+  maxVisible: number;
+  equalWidth: boolean;
+  equalOverflow: 'natural' | 'truncate' | 'grow';
+  transparency: number | null;
+  background: 'theme' | 'solid' | 'gradient';
+  color: string;
+  color2: string;
+  accent: string | null;
+  unselected: string | null;
+  selectedIcon: string | null;
+  unselectedIcon: string | null;
+  magnify: boolean;
+  magnifyScale: number;
+  magnifyLift: number;
+  magnifyRange: number;
+  scrollCompact: boolean;
+  compactThreshold: number;
+  contrast: boolean;
+  adaptiveTint: boolean;
+  swipe: boolean;
+  reorderable: boolean;
+  order: string[];
+  hidden: Record<string, { icon?: boolean; label?: boolean }>;
+  offset: number;
+}
+
+export const defaultSettings = (): SiteBarSettings => ({
+  position: 'bottom', labels: true, sectionBar: true, settingsItem: true, separateSettings: true,
+  layout: 'row', maxRows: 2, overflow: 'menu', overflowSurface: 'shared', maxVisible: 0,
+  equalWidth: false, equalOverflow: 'natural', transparency: null, background: 'theme', color: '#dce9f6', color2: '#e9dcf6',
+  accent: null, unselected: null, selectedIcon: null, unselectedIcon: null,
+  magnify: true, magnifyScale: 1.4, magnifyLift: 10, magnifyRange: 110,
+  scrollCompact: true, compactThreshold: 16, contrast: false, adaptiveTint: false, swipe: true,
+  reorderable: false, order: groups.map((group) => group.id), hidden: {}, offset: 16,
+});
+
+const storageKey = 'lg-navbar-docs:site-bar';
+const hex = (value: unknown): string | null => (typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value : null);
+
+export function loadSettings(): SiteBarSettings {
+  const base = defaultSettings();
+  try {
+    const raw = JSON.parse(localStorage.getItem(storageKey) ?? '{}') as Record<string, unknown>;
+    const merged: Record<string, unknown> = { ...base };
+    for (const [key, fallback] of Object.entries(base)) {
+      const value = raw[key];
+      if (value === undefined) continue;
+      if (key === 'order') {
+        const ids = Array.isArray(value) ? value.filter((id): id is string => groups.some((group) => group.id === id)) : [];
+        merged.order = [...new Set([...ids, ...base.order])];
+      } else if (key === 'hidden') {
+        merged.hidden = typeof value === 'object' && value !== null ? value : {};
+      } else if (['accent', 'unselected', 'selectedIcon', 'unselectedIcon'].includes(key)) {
+        merged[key] = hex(value);
+      } else if (key === 'color' || key === 'color2') {
+        merged[key] = hex(value) ?? fallback;
+      } else if (key === 'transparency') {
+        merged.transparency = typeof value === 'number' && value >= 0 && value <= 100 ? value : null;
+      } else if (typeof value === typeof fallback) {
+        merged[key] = value;
+      }
+    }
+    return merged as unknown as SiteBarSettings;
+  } catch {
+    return base;
+  }
+}
+
+export function saveSettings(settings: SiteBarSettings): void {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(settings));
+  } catch {
+    // Without storage the settings last until the page is closed.
+  }
+}
+
+export function onSettingsChange(listener: (settings: SiteBarSettings) => void): void {
+  addEventListener('storage', (event) => { if (event.key === storageKey) listener(loadSettings()); });
+}
+
+const escape = (text: string): string => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
+
+function itemHtml(href: string, label: string, icon: string | null, attrs = ''): string {
+  const svg = icon ? `<svg data-navbar-icon viewBox="0 0 24 24" aria-hidden="true"><path d="${icon}" /></svg>` : '';
+  return `<a href="${escape(href)}"${attrs}>${svg}<span data-navbar-label>${escape(label)}</span></a>`;
+}
+
+function lookOptions(settings: SiteBarSettings): LiquidGlassNavbarOptions {
+  const colors: NonNullable<LiquidGlassNavbarOptions['colors']> = {};
+  if (settings.accent) colors.selected = settings.accent;
+  if (settings.unselected) colors.unselected = settings.unselected;
+  if (settings.selectedIcon) colors.selectedIcon = settings.selectedIcon;
+  if (settings.unselectedIcon) colors.unselectedIcon = settings.unselectedIcon;
+  const background = settings.background === 'solid' ? settings.color
+    : settings.background === 'gradient' ? `linear-gradient(135deg, ${settings.color}, ${settings.color2})` : undefined;
+  return {
+    position: settings.position,
+    colors,
+    ...(background ? { background } : {}),
+    ...(settings.transparency === null ? {} : { transparency: settings.transparency }),
+    ...(settings.magnify ? { magnify: { scale: settings.magnifyScale, lift: settings.magnifyLift, range: settings.magnifyRange } } : {}),
+    ...(settings.contrast ? { contrast: { adaptiveTint: settings.adaptiveTint } } : {}),
+    equalWidth: settings.equalWidth,
+    equalWidthOverflow: settings.equalOverflow,
+  };
+}
+
+export interface SiteBar {
+  /** Mark the group and section being read. */
+  show(section: string): void;
+  update(settings: SiteBarSettings): void;
+  destroy(): void;
+}
+
+/**
+ * Mount the site bars. `base` is the path to the docs page (`''` on the docs page, `'../'` from settings).
+ * `onJump` is called when a bar item leads to a section on this page.
+ */
+export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: SiteBarSettings, onJump?: (id: string) => void): SiteBar {
+  let settings = initial;
+  let main: LiquidGlassNavbar | undefined;
+  let sub: LiquidGlassNavbar | undefined;
+  let mainNav: HTMLElement | undefined;
+  let subNav: HTMLElement | undefined;
+  let group = groups[0]!;
+  let section = '';
+  const sizeWatch = new ResizeObserver(() => placeSub());
+
+  const groupOf = (id: string): Group => groups.find((entry) => entry.sections.some(([sectionId]) => sectionId === id)) ?? groups[0]!;
+  const ordered = (): Group[] => settings.order.map((id) => groups.find((entry) => entry.id === id)).filter((entry): entry is Group => entry !== undefined);
+
+  function visibilityAttrs(id: string): string {
+    const hidden = settings.hidden[id] ?? {};
+    return `${hidden.icon === false ? ' data-navbar-hide-icon' : ''}${hidden.label === false ? ' data-navbar-hide-label' : ''}${hidden.icon === false || hidden.label === false ? ` aria-label="${escape(groups.find((entry) => entry.id === id)?.label ?? 'Settings')}"` : ''}`;
+  }
+
+  function buildMain(): void {
+    mainNav = document.createElement('nav');
+    mainNav.className = 'dd-site-bar';
+    mainNav.setAttribute('aria-label', 'Docs');
+    const items = ordered().map((entry) => itemHtml(`${base}#${entry.sections[0]![0]}`, entry.label, entry.icon,
+      `${page === 'docs' && entry === group ? ' aria-current="page"' : ''}${settings.swipe ? '' : ' data-navbar-no-swipe'} data-group="${entry.id}"${visibilityAttrs(entry.id)}`));
+    const settingsLink = settings.settingsItem
+      ? itemHtml(page === 'settings' ? './' : `${base}settings/`, 'Settings', settingsIcon,
+        `${page === 'settings' ? ' aria-current="page"' : ''} data-navbar-overflow="never" data-group="settings"${visibilityAttrs('settings')}`)
+      : '';
+    mainNav.innerHTML = settings.settingsItem && settings.separateSettings
+      ? `<div data-navbar-section>${items.join('')}</div><div data-navbar-section>${settingsLink}</div>`
+      : items.join('') + settingsLink;
+    document.body.append(mainNav);
+    main = mountLiquidGlassNavbar(mainNav, {
+      ...lookOptions(settings),
+      labels: settings.labels,
+      layout: settings.layout,
+      ...(settings.overflow === 'off' ? {} : {
+        overflow: { style: settings.overflow, surface: settings.overflowSurface, ...(settings.maxVisible ? { maxVisible: settings.maxVisible } : {}) },
+        ...(settings.layout !== 'row' ? { maxRows: settings.maxRows } : {}),
+      }),
+      ...(settings.scrollCompact ? { scrollCompact: { threshold: settings.compactThreshold } } : {}),
+      reorderable: settings.reorderable,
+      onSelect: (item) => jump(item),
+      onReorder: (order) => {
+        const ids = order.map((item) => item.dataset.group).filter((id): id is string => Boolean(id) && id !== 'settings');
+        settings = { ...settings, order: [...ids, ...settings.order.filter((id) => !ids.includes(id))] };
+        saveSettings(settings);
+      },
+    });
+    mainNav.style.setProperty('--lg-nav-offset', `${settings.offset}px`);
+    sizeWatch.observe(mainNav);
+  }
+
+  function buildSub(): void {
+    if (!settings.sectionBar || page !== 'docs') return;
+    subNav = document.createElement('nav');
+    subNav.className = 'dd-site-bar dd-site-bar--sections';
+    subNav.setAttribute('aria-label', `${group.label} sections`);
+    subNav.innerHTML = group.sections.map(([id, label]) => itemHtml(`#${id}`, label, null,
+      `${id === section ? ' aria-current="page"' : ''}${settings.swipe ? '' : ' data-navbar-no-swipe'}`)).join('');
+    document.body.append(subNav);
+    // Two rows before More: a group with many sections shows them all on a phone.
+    sub = mountLiquidGlassNavbar(subNav, {
+      ...lookOptions(settings), onSelect: (item) => jump(item),
+      ...(settings.position === 'top' || settings.position === 'bottom' ? { layout: 'wrap' as const, maxRows: 2 } : {}),
+      overflow: true,
+    });
+    placeSub();
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) subNav.animate({ opacity: [0, 1] }, { duration: 140, easing: 'ease-out' });
+  }
+
+  // The section bar sits on the same edge, just beyond the main bar. Only its edge distance moves out; its
+  // side margins stay the same as the main bar's, so it keeps the full width.
+  function placeSub(): void {
+    if (!subNav || !mainNav) return;
+    const box = mainNav.getBoundingClientRect();
+    const edge = settings.position;
+    const distance = edge === 'bottom' ? innerHeight - box.top : edge === 'top' ? box.bottom : edge === 'left' ? box.right : innerWidth - box.left;
+    for (const side of ['top', 'bottom', 'left', 'right'] as const) if (side !== edge) subNav.style.removeProperty(side);
+    subNav.style.setProperty(edge, `${Math.round(distance + 10)}px`);
+    subNav.style.setProperty('--lg-nav-offset', `${settings.offset}px`);
+    sub?.sync();
+  }
+
+  function jump(item: NavbarItem): void {
+    if (!(item instanceof HTMLAnchorElement)) return;
+    const url = new URL(item.href);
+    if (url.pathname !== location.pathname || !url.hash) return;
+    onJump?.(url.hash.slice(1));
+  }
+
+  function build(): void {
+    // The page makes room on the bars' edge (see docs.css).
+    document.documentElement.dataset.siteBar = settings.position;
+    buildMain();
+    buildSub();
+  }
+
+  function teardown(): void {
+    sizeWatch.disconnect();
+    main?.destroy();
+    sub?.destroy();
+    mainNav?.remove();
+    subNav?.remove();
+    main = sub = undefined;
+    mainNav = subNav = undefined;
+  }
+
+  build();
+  return {
+    show(id) {
+      if (id === section) return;
+      section = id;
+      const next = groupOf(id);
+      if (next !== group) {
+        group = next;
+        const item = mainNav?.querySelector<HTMLAnchorElement>(`[data-group="${group.id}"]`)
+          ?? main?.overflowItems.find((entry) => entry.dataset.group === group.id);
+        if (item) main?.select(item);
+        sub?.destroy();
+        subNav?.remove();
+        sub = undefined;
+        subNav = undefined;
+        buildSub();
+      } else if (subNav && sub) {
+        const item = [...subNav.querySelectorAll<HTMLAnchorElement>('a'), ...sub.overflowItems].find((entry) => entry.getAttribute('href') === `#${id}`);
+        if (item) sub.select(item);
+      }
+    },
+    update(next) {
+      settings = next;
+      teardown();
+      build();
+    },
+    destroy: teardown,
+  };
+}

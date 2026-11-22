@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light dark">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Documentation for Liquid Glass Navbar: a glass tab bar for the web with swipes, rows, More, popovers, badges and more, with live examples.">
+<title>Liquid Glass Navbar docs</title>
+<link rel="stylesheet" href="{{APP_CSS}}">
+<script type="module" src="{{APP_JS}}"></script>
+</head>
+<body>
+<header class="dd-top">
+  <a class="dd-brand" href="./">Liquid Glass Navbar <span class="dd-brand-docs">Docs</span></a>
+  <nav class="dd-links" aria-label="Project">
+    <a href="settings/" class="dd-wide">Bar settings</a>
+    <a href="../">Builder</a>
+    <a href="https://github.com/soheab-com/liquid-glass-navbar" class="dd-wide">GitHub</a>
+    <a href="https://github.com/soheab-com/liquid-glass-navbar/blob/main/CHANGELOG.md" class="dd-wide">Changelog</a>
+    <button type="button" class="dd-theme" id="theme"></button>
+  </nav>
+</header>
+<div class="dd-layout">
+  <aside class="dd-toc" aria-label="On this page">
+    <details open>
+      <summary>Contents</summary>
+      <div class="dd-toc-panel">
+      <ol>
+        <li><a href="#introduction">Introduction</a></li>
+        <li><a href="#install">Install</a></li>
+        <li><a href="#quick-start">Quick start</a></li>
+        <li class="dd-toc-group">Basics</li>
+        <li><a href="#structure">Tabs, actions and sections</a></li>
+        <li><a href="#links">Links as tabs</a></li>
+        <li><a href="#position">Position</a></li>
+        <li><a href="#icons-labels">Icons and labels</a></li>
+        <li><a href="#equal-width">Equal width</a></li>
+        <li><a href="#look">Colors and glass</a></li>
+        <li class="dd-toc-group">Interaction</li>
+        <li><a href="#swiping">Swiping</a></li>
+        <li><a href="#reordering">Reordering</a></li>
+        <li><a href="#magnify">Magnify</a></li>
+        <li class="dd-toc-group">Layout</li>
+        <li><a href="#rows">Rows</a></li>
+        <li><a href="#more">More</a></li>
+        <li class="dd-toc-group">Features</li>
+        <li><a href="#popovers">Popovers</a></li>
+        <li><a href="#badges">Badges</a></li>
+        <li><a href="#scroll-compact">Scroll compact</a></li>
+        <li><a href="#context-actions">Context actions</a></li>
+        <li><a href="#contrast">Adaptive contrast</a></li>
+        <li><a href="#persistence">Saving the tab</a></li>
+        <li class="dd-toc-group">Reference</li>
+        <li><a href="#options">Options</a></li>
+        <li><a href="#methods">Methods</a></li>
+        <li><a href="#attributes">HTML attributes</a></li>
+        <li><a href="#css">CSS variables</a></li>
+        <li><a href="#accessibility">Accessibility and motion</a></li>
+        <li><a href="#browsers">Browser support</a></li>
+      </ol>
+      </div>
+    </details>
+  </aside>
+  <main class="dd-main">
+    <section id="introduction">
+      <h1>Liquid Glass Navbar</h1>
+      <p class="dd-lede">A glass tab bar for the web, in the style of iOS. You write the buttons; it adds the glass, the sliding highlight and the swipe gesture. It's plain TypeScript and CSS, so it works with any framework or none.</p>
+      <div data-demo="hero"></div>
+      <p>Every example on this page is the real component. Tap the tabs, drag across them, move your pointer over them, and change the controls; the code below each example updates to match. To design a bar visually and copy the result, use the <a href="../">builder</a>.</p>
+    </section>
+
+    <section id="install">
+      <h2>Install</h2>
+      <p>The package is installed from GitHub, not npm. Pin a tag:</p>
+      <pre data-lang="ts"><code>npm install 'git+https://github.com/soheab-com/liquid-glass-navbar.git#v0.7.0'</code></pre>
+      <p>It ships TypeScript and CSS, so use a bundler such as Vite, esbuild or webpack.</p>
+    </section>
+
+    <section id="quick-start">
+      <h2>Quick start</h2>
+      <p>Write a normal <code>&lt;nav&gt;</code> with buttons. Mark each icon with <code>data-navbar-icon</code> and each label with <code>data-navbar-label</code>, and mark the starting tab with <code>aria-current="page"</code>. Then mount the bar.</p>
+      <div data-demo="quickstart"></div>
+      <p><code>mountLiquidGlassNavbar</code> returns an object for changing the bar later. Call <code>destroy()</code> on it before removing the <code>&lt;nav&gt;</code>; that removes everything the navbar added.</p>
+    </section>
+
+    <section id="structure">
+      <h2>Tabs, actions and sections</h2>
+      <p>A <strong>tab</strong> is somewhere you go: picking it moves the highlight and calls <code>onSelect</code>. An <strong>action</strong> does something, like opening search: mark it with <code>data-navbar-action</code> and it calls <code>onAction</code> instead, without becoming the current tab.</p>
+      <p>Wrap groups of items in <code>data-navbar-section</code> elements to give each group its own glass pill. Items without a visible label need an <code>aria-label</code>.</p>
+      <div data-demo="structure"></div>
+    </section>
+
+    <section id="links">
+      <h2>Links as tabs</h2>
+      <p>Use <code>&lt;a href&gt;</code> elements instead of buttons when every tab is its own page. Tapping a link, or ending a swipe on it, follows it like a normal click. Callbacks receive the link: <code>NavbarItem</code> is a button or a link.</p>
+      <pre data-lang="html"><code>&lt;nav aria-label="Main"&gt;
+  &lt;a href="/" aria-current="page"&gt;&lt;svg data-navbar-icon …&gt;&lt;/svg&gt;&lt;span data-navbar-label&gt;Home&lt;/span&gt;&lt;/a&gt;
+  &lt;a href="/schedule"&gt;&lt;svg data-navbar-icon …&gt;&lt;/svg&gt;&lt;span data-navbar-label&gt;Schedule&lt;/span&gt;&lt;/a&gt;
+&lt;/nav&gt;</code></pre>
+      <p>With a client-side router, pass <code>autoSelect: false</code> so the navbar doesn't move <code>aria-current</code> itself. Set it from your router, then call <code>sync()</code>.</p>
+    </section>
+
+    <section id="position">
+      <h2>Position</h2>
+      <p><code>position</code> pins the bar to an edge of the screen, respecting safe areas. Leave it out to place the bar with your own layout. Change it later with <code>setPosition()</code>.</p>
+      <div data-demo="position"></div>
+    </section>
+
+    <section id="icons-labels">
+      <h2>Icons and labels</h2>
+      <p><code>labels: false</code> shows icons only. To hide the icon or label of one item, add <code>data-navbar-hide-icon</code> or <code>data-navbar-hide-label</code>, or call <code>setItemVisibility()</code>. Hiding both hides the item.</p>
+      <div data-demo="visibility"></div>
+    </section>
+
+    <section id="equal-width">
+      <h2>Equal width</h2>
+      <p><code>equalWidth: true</code> makes every tab as wide as the widest one, so the highlight is the same size everywhere. <code>equalWidthOverflow</code> decides what happens when that doesn't fit: return to natural widths, cut labels off with an ellipsis, or let the bar grow. Drag the width slider to see it.</p>
+      <div data-demo="equal"></div>
+    </section>
+
+    <section id="look">
+      <h2>Colors and glass</h2>
+      <p><code>colors</code> sets the selected and unselected colors, and optionally separate icon and label colors. <code>background</code> takes any CSS background to tint the glass. <code>transparency</code> runs from 0 (solid) to 100 (clear glass with only the rim, shadow and refraction).</p>
+      <div data-demo="look"></div>
+      <p>In Chromium the rim refracts the live page behind it. Safari and Firefox use live blur and tint. The same settings are available as CSS variables; see <a href="#css">CSS variables</a>.</p>
+    </section>
+
+    <section id="swiping">
+      <h2>Swiping</h2>
+      <p>Press a tab and slide. The highlight follows your finger and swells into a clear bubble; lift to pick the item under it. Past the first or last item it stretches like a rubber band, and when you let go it keeps the speed of your finger as it settles.</p>
+      <p>Swipes cross sections and include actions. Add <code>data-navbar-no-swipe</code> to an item or section to keep it out; tapping and the keyboard still work there.</p>
+      <div data-demo="swipe"></div>
+    </section>
+
+    <section id="reordering">
+      <h2>Reordering</h2>
+      <p>With <code>reorderable: true</code>, a focused tab moves with Alt and the arrow keys. Call <code>setReorderMode(true)</code>, for example from an Edit button, to let people drag tabs too. Tabs move within their own section, and <code>onReorder</code> receives the new order.</p>
+      <div data-demo="reorder"></div>
+    </section>
+
+    <section id="magnify">
+      <h2>Magnify</h2>
+      <p><code>magnify</code> adds a Dock-style effect: icons near the mouse pointer or a sliding finger grow and rise away from the bar's edge, and settle again as it moves on. Each icon follows its own spring, so moving back and forth stays smooth. Only the icons move; the tabs, the highlight and the tap areas stay where they are.</p>
+      <div data-demo="magnify"></div>
+    </section>
+
+    <section id="rows">
+      <h2>Rows</h2>
+      <p><code>layout: 'wrap'</code> wraps the items into rows inside one glass surface. <code>layout: 'rows'</code> gives each row its own centered pill. The bar measures the real icons, labels, padding and gaps, so every item fits, and it reflows when the space changes. Drag the width slider.</p>
+      <p>Put an item or section on a specific row with <code>data-navbar-row="1"</code>, <code>"2"</code> and so on. In a bar with sections, each row holds whole sections. Multi-row layouts apply to bars at the top or bottom, or bars you place yourself.</p>
+      <div data-demo="rows"></div>
+    </section>
+
+    <section id="more">
+      <h2>More</h2>
+      <p><code>overflow</code> moves the items that don't fit into a More button. The <code>'menu'</code> style lists them in an anchored menu. The <code>'expand'</code> style opens a row of glass icons, in one shared pill or each in its own glass. Limit the bar with <code>maxRows</code> (for multi-row layouts) or <code>maxVisible</code>.</p>
+      <p>The current tab stays selected when it moves behind More, and More shows that it holds the current tab. Slide onto More during a swipe and it opens, so the same finger can carry on into it. More closes on Escape, an outside press, another tab, or a selection. Keep an item in the bar with <code>data-navbar-overflow="never"</code>.</p>
+      <div data-demo="more"></div>
+    </section>
+
+    <section id="popovers">
+      <h2>Popovers</h2>
+      <p><code>createPopover(item, content, options)</code> anchors a popover to an item in the bar, such as a Create action. Tapping or swiping to the item toggles it. A small pointer stays aligned with the item when the popover shifts away from an edge or flips to the other side.</p>
+      <p>For a trigger outside the bar, use the exported <code>createAnchoredPopover(trigger, content, options)</code>. Both close on Escape, an outside press, or a choice inside, and return focus to the trigger when it was inside.</p>
+      <div data-demo="popover"></div>
+    </section>
+
+    <section id="badges">
+      <h2>Badges</h2>
+      <p><code>setBadge(item, badge)</code> shows a count, a dot or a status on an item; pass <code>null</code> to remove it. The label is announced with the item. When an item with a badge is behind More, More shows a dot.</p>
+      <div data-demo="badges"></div>
+    </section>
+
+    <section id="scroll-compact">
+      <h2>Scroll compact</h2>
+      <p><code>scrollCompact</code> hides the labels while the page scrolls down and brings them back when it scrolls up or reaches the top. Small reversals under the threshold and rubber-band overscroll are ignored. Pass the element that scrolls as <code>source</code>; the default is the window. Scroll the example.</p>
+      <div data-demo="compact"></div>
+    </section>
+
+    <section id="context-actions">
+      <h2>Context actions</h2>
+      <p><code>showContextActions(nodes, options)</code> shows your own actions in the bar, for example while files are selected. Pass buttons, or <code>data-navbar-section</code> groups for separate pills. <code>hideContextActions()</code> removes them and brings back the tab that was selected before.</p>
+      <ul>
+        <li><code>placement</code>: <code>'replace'</code> (the default) swaps out the whole navigation; <code>'start'</code> and <code>'end'</code> put the actions beside it; a section or item of the bar replaces just that part.</li>
+        <li><code>back</code>: adds a Back item that returns to the previous items. <code>{ label, icon }</code> changes it, and <code>onBack</code> runs when it's used.</li>
+        <li><code>className</code> and <code>look</code>: give the actions' pills styles of their own, with <code>colors</code>, <code>background</code> and <code>transparency</code>.</li>
+      </ul>
+      <div data-demo="context"></div>
+    </section>
+
+    <section id="contrast">
+      <h2>Adaptive contrast</h2>
+      <p>Mark content with <code>data-navbar-backdrop</code>, listing <code>dark</code>, <code>light</code> and/or <code>busy</code>, and turn on <code>contrast</code>. Over dark content the icons and labels switch to a readable color, even with clear glass. With <code>adaptiveTint</code>, busy content such as photos adds tint and quiet content clears it again. You can also report what's behind the bar yourself with <code>setBackdrop({ tone, busy })</code>. Scroll the example.</p>
+      <div data-demo="contrast"></div>
+    </section>
+
+    <section id="persistence">
+      <h2>Saving the tab</h2>
+      <p>The navbar stores nothing itself. Save the tab in <code>onSelect</code> and restore it with <code>select(item)</code>, which marks it as current without calling <code>onSelect</code>. It works for items behind More. Pick a tab, then press Reload.</p>
+      <div data-demo="persistence"></div>
+    </section>
+
+    <section id="options">
+      <h2>Options</h2>
+      <p>Pass these to <code>mountLiquidGlassNavbar(nav, options)</code>. All are optional.</p>
+      <div class="dd-table"><table>
+        <thead><tr><th>Option</th><th>Type</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>position</code></td><td><code>'top' | 'bottom' | 'left' | 'right'</code></td><td>Pins the bar to an edge. Leave it out to place it yourself.</td></tr>
+          <tr><td><code>labels</code></td><td><code>boolean</code></td><td><code>false</code> shows icons only.</td></tr>
+          <tr><td><code>equalWidth</code></td><td><code>boolean</code></td><td>Every tab as wide as the widest.</td></tr>
+          <tr><td><code>equalWidthOverflow</code></td><td><code>'natural' | 'truncate' | 'grow'</code></td><td>What equal widths do when they don't fit. Default <code>'natural'</code>.</td></tr>
+          <tr><td><code>colors</code></td><td><code>NavbarColors</code></td><td><code>selected</code>, <code>unselected</code>, <code>selectedIcon</code>, <code>selectedLabel</code>, <code>unselectedIcon</code>, <code>unselectedLabel</code>.</td></tr>
+          <tr><td><code>background</code></td><td><code>string</code></td><td>Any CSS background to tint the glass.</td></tr>
+          <tr><td><code>transparency</code></td><td><code>number</code></td><td>0 (solid) to 100 (clear).</td></tr>
+          <tr><td><code>reorderable</code></td><td><code>boolean</code></td><td>Allows reordering with the keyboard and, in reorder mode, by dragging.</td></tr>
+          <tr><td><code>autoSelect</code></td><td><code>boolean</code></td><td><code>false</code> leaves <code>aria-current</code> to you.</td></tr>
+          <tr><td><code>enabled</code></td><td><code>() =&gt; boolean</code></td><td>Return <code>false</code> to switch the glass off, for example in another theme.</td></tr>
+          <tr><td><code>layout</code></td><td><code>'row' | 'wrap' | 'rows'</code></td><td>One row (default), rows in one pill, or a pill per row.</td></tr>
+          <tr><td><code>maxRows</code></td><td><code>number</code></td><td>With <code>overflow</code>, the most rows before items move into More.</td></tr>
+          <tr><td><code>overflow</code></td><td><code>boolean | 'menu' | 'expand' | NavbarOverflowOptions</code></td><td>Moves items that don't fit into More. Options: <code>style</code>, <code>surface</code>, <code>label</code>, <code>icon</code>, <code>maxVisible</code>, <code>boundary</code>.</td></tr>
+          <tr><td><code>compact</code></td><td><code>boolean</code></td><td>Start with icons only.</td></tr>
+          <tr><td><code>scrollCompact</code></td><td><code>boolean | { source, threshold }</code></td><td>Compact while scrolling down.</td></tr>
+          <tr><td><code>contrast</code></td><td><code>boolean | { regions, adaptiveTint }</code></td><td>Adapt the foreground and tint to the content behind the bar.</td></tr>
+          <tr><td><code>magnify</code></td><td><code>boolean | { scale, lift, range }</code></td><td>Dock-style magnification. Defaults: 1.4, 10px, 110px.</td></tr>
+          <tr><td><code>onSelect(item)</code></td><td>callback</td><td>A tab was picked.</td></tr>
+          <tr><td><code>onAction(item)</code></td><td>callback</td><td>An action was picked.</td></tr>
+          <tr><td><code>onReorder(order, section)</code></td><td>callback</td><td>Tabs were reordered.</td></tr>
+          <tr><td><code>onOverflowChange(items)</code></td><td>callback</td><td>Items moved between the bar and More.</td></tr>
+          <tr><td><code>onCompactChange(compact)</code></td><td>callback</td><td>The bar compacted or expanded.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="methods">
+      <h2>Methods</h2>
+      <p>The object returned by <code>mountLiquidGlassNavbar</code>:</p>
+      <div class="dd-table"><table>
+        <thead><tr><th>Method</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>sync()</code></td><td>Re-reads the bar after you change the current tab, hide an item or switch themes.</td></tr>
+          <tr><td><code>select(item)</code></td><td>Marks a tab as current without calling <code>onSelect</code>.</td></tr>
+          <tr><td><code>setPosition(edge?)</code></td><td>Moves the bar to another edge, or back to your layout.</td></tr>
+          <tr><td><code>setLabels(visible)</code></td><td>Shows or hides all labels.</td></tr>
+          <tr><td><code>setEqualWidth(equal, overflow?)</code></td><td>Turns equal widths on or off.</td></tr>
+          <tr><td><code>setColors(colors?)</code>, <code>setBackground(value?)</code>, <code>setTransparency(percent?)</code></td><td>Change the look. Call with nothing to return to the theme.</td></tr>
+          <tr><td><code>setItemVisibility(item, { icon, label })</code></td><td>Hides an item's icon or label.</td></tr>
+          <tr><td><code>setReorderMode(on)</code>, <code>reorder(items)</code></td><td>Drag-to-reorder, or set the order of one section.</td></tr>
+          <tr><td><code>setLayout(layout, maxRows?)</code></td><td>Changes the layout.</td></tr>
+          <tr><td><code>setOverflow(overflow?)</code></td><td>Turns More on, changes it, or turns it off.</td></tr>
+          <tr><td><code>overflowItems</code></td><td>The items currently behind More.</td></tr>
+          <tr><td><code>openOverflow({ focus })</code>, <code>closeOverflow()</code></td><td>Opens or closes More.</td></tr>
+          <tr><td><code>setBadge(item, badge)</code></td><td><code>{ count }</code>, <code>{ dot: true }</code>, <code>{ status, label }</code>, or <code>null</code>.</td></tr>
+          <tr><td><code>setCompact(on)</code>, <code>setScrollCompact(options?)</code>, <code>compact</code></td><td>Compact state and the scroll watcher.</td></tr>
+          <tr><td><code>setContrast(options?)</code>, <code>setBackdrop(signal?)</code></td><td>Contrast settings, or what's behind the bar: <code>{ tone: 'dark', busy: true }</code>.</td></tr>
+          <tr><td><code>showContextActions(nodes, { label })</code>, <code>hideContextActions()</code>, <code>contextActive</code></td><td>Swap in actions and restore the navigation.</td></tr>
+          <tr><td><code>createPopover(item, content, options)</code></td><td>A popover anchored to an item.</td></tr>
+          <tr><td><code>setMagnify(options?)</code></td><td>Turns magnify on, changes it, or turns it off.</td></tr>
+          <tr><td><code>destroy()</code></td><td>Removes everything the navbar added.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="attributes">
+      <h2>HTML attributes</h2>
+      <div class="dd-table"><table>
+        <thead><tr><th>Attribute</th><th>On</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>data-navbar-icon</code>, <code>data-navbar-label</code></td><td>inside an item</td><td>The item's icon and label.</td></tr>
+          <tr><td><code>aria-current="page"</code></td><td>item</td><td>The current tab.</td></tr>
+          <tr><td><code>data-navbar-action</code></td><td>item</td><td>An action rather than a tab.</td></tr>
+          <tr><td><code>data-navbar-section</code></td><td>group</td><td>A separate pill.</td></tr>
+          <tr><td><code>data-navbar-hide-icon</code>, <code>data-navbar-hide-label</code></td><td>item</td><td>Hide the icon or label.</td></tr>
+          <tr><td><code>data-navbar-no-swipe</code></td><td>item or section</td><td>Leave it out of swipes.</td></tr>
+          <tr><td><code>data-navbar-row="n"</code></td><td>item or section</td><td>Put it on row <em>n</em>.</td></tr>
+          <tr><td><code>data-navbar-overflow="never"</code></td><td>item</td><td>Never move it into More.</td></tr>
+          <tr><td><code>data-navbar-backdrop="dark busy"</code></td><td>page content</td><td>What the content behind the bar looks like.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="css">
+      <h2>CSS variables</h2>
+      <p>Set these on the <code>&lt;nav&gt;</code>.</p>
+      <div class="dd-table"><table>
+        <thead><tr><th>Variable</th><th>What it controls</th></tr></thead>
+        <tbody>
+          <tr><td><code>--lg-nav-accent</code>, <code>--lg-nav-muted</code></td><td>Selected and unselected color.</td></tr>
+          <tr><td><code>--lg-nav-icon-accent</code>, <code>--lg-nav-label-accent</code>, <code>--lg-nav-icon-color</code>, <code>--lg-nav-label-color</code></td><td>Separate icon and label colors.</td></tr>
+          <tr><td><code>--lg-nav-surface</code>, <code>--lg-nav-opaque</code>, <code>--lg-nav-background</code></td><td>Glass tint, the solid fallback, and a custom background.</td></tr>
+          <tr><td><code>--lg-nav-rim</code>, <code>--lg-nav-highlight</code>, <code>--lg-nav-shadow</code></td><td>Edge, inner highlight and shadow.</td></tr>
+          <tr><td><code>--lg-nav-font</code></td><td>Font family.</td></tr>
+          <tr><td><code>--lg-nav-offset</code>, <code>--lg-nav-z</code></td><td>Distance from the edge and stacking order of a pinned bar.</td></tr>
+          <tr><td><code>--lg-nav-wrap-radius</code></td><td>Corner radius of a wrapped multi-row bar.</td></tr>
+          <tr><td><code>--lg-nav-on-dark-color</code>, <code>--lg-nav-on-dark-accent</code>, <code>--lg-nav-on-light-color</code></td><td>Foreground over dark or light content with <code>contrast</code>.</td></tr>
+          <tr><td><code>--lg-nav-badge</code>, <code>--lg-nav-badge-color</code>, <code>--lg-nav-badge-info</code>, <code>--lg-nav-badge-success</code>, <code>--lg-nav-badge-warning</code></td><td>Badge colors.</td></tr>
+          <tr><td><code>--lg-popover-background</code>, <code>--lg-popover-color</code>, <code>--lg-popover-radius</code>, <code>--lg-popover-z</code></td><td>Popover look.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="accessibility">
+      <h2>Accessibility and motion</h2>
+      <ul>
+        <li>Items are your own buttons and links, so they keep their roles, focus order and keyboard behavior. Labels become accessible names automatically.</li>
+        <li>The current tab is <code>aria-current="page"</code>. More and popover triggers carry <code>aria-expanded</code> and <code>aria-controls</code>.</li>
+        <li>Focus moves into a popover opened from the keyboard and returns to its trigger on Escape. Focus stays on items when they move between the bar and More.</li>
+        <li>Moving parts use springs, so interrupting them turns them around smoothly. With Reduce Motion they jump to the end, and magnify is off.</li>
+        <li>With Reduce Transparency the default glass becomes solid. An explicit <code>transparency</code> takes precedence.</li>
+      </ul>
+    </section>
+
+    <section id="browsers">
+      <h2>Browser support</h2>
+      <p>The navbar is built and tested in Chromium. Rim refraction of the live page is Chromium only; Safari and other browsers show the same glass with live blur and tint.</p>
+    </section>
+  </main>
+</div>
+</body>
+</html>
