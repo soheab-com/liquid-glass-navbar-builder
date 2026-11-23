@@ -194,6 +194,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     document.body.append(mainNav);
     main = mountLiquidGlassNavbar(mainNav, {
       ...lookOptions(settings),
+      refractionSources: prose,
       labels: settings.labels,
       layout: settings.layout,
       ...(settings.overflow === 'off' ? {} : {
@@ -220,6 +221,12 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     stopWatches.push(() => moreWatch.disconnect());
   }
 
+  // Safari bends a copy of what's behind the bars: the page's headings and text, not the live demos, which change
+  // while you use them and would make the copies large.
+  function prose(): Iterable<Element> {
+    return document.querySelectorAll('main :is(h1, h2, h3, p):not([data-demo] *, .dd-code *, form *)');
+  }
+
   function buildSub(): void {
     if (!settings.sectionBar || page !== 'docs') return;
     subNav = document.createElement('nav');
@@ -230,7 +237,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     document.body.append(subNav);
     // Two rows before More: a group with many sections shows them all on a phone.
     sub = mountLiquidGlassNavbar(subNav, {
-      ...lookOptions(settings), onSelect: (item) => jump(item),
+      ...lookOptions(settings), refractionSources: prose, onSelect: (item) => jump(item),
       ...(settings.position === 'top' || settings.position === 'bottom' ? { layout: 'wrap' as const, maxRows: 2 } : {}),
       overflow: true,
     });

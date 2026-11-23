@@ -19,6 +19,8 @@ import * as context from './examples/context.js';
 import contextSource from './examples/context.ts?raw';
 import * as contrast from './examples/contrast.js';
 import contrastSource from './examples/contrast.ts?raw';
+import * as refraction from './examples/refraction.js';
+import refractionSource from './examples/refraction.ts?raw';
 import * as equal from './examples/equal.js';
 import equalSource from './examples/equal.ts?raw';
 import * as hero from './examples/hero.js';
@@ -519,6 +521,15 @@ const demos: Record<string, Demo> = {
     stage: { height: 340, backdrop: 'stories', scroll: stories },
     html: () => navHtml([basic()]),
     example: contrast, source: contrastSource,
+  },
+  refraction: {
+    state: { transparency: 100 },
+    controls: [
+      { key: 'transparency', label: 'Transparency', type: 'range', min: 0, max: 100, unit: '%' },
+    ],
+    stage: { height: 340, backdrop: 'stories', scroll: stories.replaceAll('<article', '<article data-navbar-refract="scroll"') },
+    html: () => navHtml([basic()]),
+    example: refraction, source: refractionSource,
   },
   animations: {
     state: { 'animations.reflow': true, 'animations.popovers': true, 'animations.tap': true, 'animations.badges': true, width: 100 },

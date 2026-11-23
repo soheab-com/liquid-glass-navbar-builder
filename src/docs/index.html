@@ -50,6 +50,7 @@
         <li><a href="#scroll-compact">Scroll compact</a></li>
         <li><a href="#context-actions">Context actions</a></li>
         <li><a href="#contrast">Adaptive contrast</a></li>
+        <li><a href="#refraction">Bending the backdrop</a></li>
         <li><a href="#persistence">Saving the tab</a></li>
         <li class="dd-toc-group">Reference</li>
         <li><a href="#options">Options</a></li>
@@ -209,6 +210,12 @@
       <div data-demo="contrast"></div>
     </section>
 
+    <section id="refraction">
+      <h2>Bending the backdrop</h2>
+      <p>The glass bends what's behind it along its rounded edge, like Liquid Glass on iOS: fully clear glass squeezes the backdrop into the bevel, tinted glass folds it over. Chromium bends the live page. Safari can't bend what's behind an element, so there the glass bends a copy of the elements you mark: <code>data-navbar-refract</code> for a fixed backdrop such as a wallpaper, <code>data-navbar-refract="scroll"</code> for content that scrolls under the bar, or pass your own elements with <code>refractionSources</code>. Content that scrolls is copied and moved from script, so on iOS it can trail a little during fast flicks. Call <code>refreshRefraction()</code> after copied content changes. While something is behind a piece of glass, its icons and labels get a soft halo so they stay readable, and over images its rim, highlight and shadow take the image's colour. Scroll the example.</p>
+      <div data-demo="refraction"></div>
+    </section>
+
     <section id="persistence">
       <h2>Saving the tab</h2>
       <p>The navbar stores nothing itself. Save the tab in <code>onSelect</code> and restore it with <code>select(item)</code>, which marks it as current without calling <code>onSelect</code>. It works for items behind More. Pick a tab, then press Reload.</p>
@@ -228,6 +235,7 @@
           <tr><td><code>colors</code></td><td><code>NavbarColors</code></td><td><code>selected</code>, <code>unselected</code>, <code>selectedIcon</code>, <code>selectedLabel</code>, <code>unselectedIcon</code>, <code>unselectedLabel</code>.</td></tr>
           <tr><td><code>background</code></td><td><code>string</code></td><td>Any CSS background to tint the glass.</td></tr>
           <tr><td><code>transparency</code></td><td><code>number</code></td><td>0 (solid) to 100 (clear).</td></tr>
+          <tr><td><code>refractionSources</code></td><td><code>string | () =&gt; Iterable&lt;Element&gt;</code></td><td>Safari only: the elements whose copy the glass bends. Defaults to <code>[data-navbar-refract]</code>, where scrolling content needs <code>="scroll"</code>; elements you pass yourself are always used. See <a href="#refraction">Bending the backdrop</a>.</td></tr>
           <tr><td><code>reorderable</code></td><td><code>boolean</code></td><td>Allows reordering with the keyboard and, in reorder mode, by dragging.</td></tr>
           <tr><td><code>autoSelect</code></td><td><code>boolean</code></td><td><code>false</code> leaves <code>aria-current</code> to you.</td></tr>
           <tr><td><code>enabled</code></td><td><code>() =&gt; boolean</code></td><td>Return <code>false</code> to switch the glass off, for example in another theme.</td></tr>
@@ -260,6 +268,7 @@
           <tr><td><code>setLabels(visible)</code></td><td>Shows or hides all labels.</td></tr>
           <tr><td><code>setEqualWidth(equal, overflow?)</code></td><td>Turns equal widths on or off.</td></tr>
           <tr><td><code>setColors(colors?)</code>, <code>setBackground(value?)</code>, <code>setTransparency(percent?)</code></td><td>Change the look. Call with nothing to return to the theme.</td></tr>
+          <tr><td><code>refreshRefraction()</code></td><td>Safari only: copy the marked content again after it changed.</td></tr>
           <tr><td><code>setItemVisibility(item, { icon, label })</code></td><td>Hides an item's icon or label.</td></tr>
           <tr><td><code>setReorderMode(on)</code>, <code>reorder(items)</code></td><td>Drag-to-reorder, or set the order of one section.</td></tr>
           <tr><td><code>setLayout(layout, maxRows?)</code></td><td>Changes the layout.</td></tr>
@@ -326,6 +335,7 @@
           <tr><td><code>data-navbar-row="n"</code></td><td>item or section</td><td>Put it on row <em>n</em>.</td></tr>
           <tr><td><code>data-navbar-overflow="never"</code></td><td>item</td><td>Never move it into More.</td></tr>
           <tr><td><code>data-navbar-backdrop="dark busy"</code></td><td>page content</td><td>What the content behind the bar looks like.</td></tr>
+          <tr><td><code>data-navbar-refract</code>, <code>data-navbar-refract="scroll"</code></td><td>page content</td><td>Content Safari's glass bends a copy of: a fixed backdrop, or content that scrolls.</td></tr>
         </tbody>
       </table></div>
     </section>
