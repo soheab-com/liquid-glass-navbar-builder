@@ -1,7 +1,7 @@
 import { mountLiquidGlassNavbar } from '@soheab-com/liquid-glass-navbar';
 import type { Example } from '../example.js';
 
-export const run: Example<{ editing: boolean }> = ({ nav, output, controls }) => {
+export const run: Example<{ editing: boolean }> = ({ nav, output, controls: { editing } }) => {
   // #region
   const navbar = mountLiquidGlassNavbar(nav, {
     reorderable: true,
@@ -11,7 +11,7 @@ export const run: Example<{ editing: boolean }> = ({ nav, output, controls }) =>
     },
   });
   // Drag to reorder while editing; Alt and the arrow keys always work.
-  navbar.setReorderMode(controls.editing);
+  navbar.setReorderMode(editing);
   // #endregion
   return navbar;
 };

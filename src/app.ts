@@ -93,6 +93,7 @@ function renderPreview(): void {
     ...(overflowValue(config) ? { overflow: { ...overflowValue(config), boundary: frame } } : {}),
     ...(config.scrollCompact ? { scrollCompact: { source: sample } } : {}),
     ...(config.magnify ? { magnify: true } : {}),
+    ...(config.animations ? { animations: true } : {}),
     ...(config.contrast ? { contrast: { adaptiveTint: config.adaptiveTint } } : {}),
     onAction(button) {
       if (button.dataset.context === 'done') {
@@ -351,6 +352,8 @@ function syncControls(): void {
   element('#overflow', HTMLSelectElement).value = config.overflow;
   element('#overflow', HTMLSelectElement).disabled = vertical;
   element('#expand-surface', HTMLSelectElement).value = config.expandSurface;
+  element('#overflow-trigger', HTMLSelectElement).value = config.overflowTrigger;
+  element('#overflow-trigger-row', HTMLElement).hidden = config.overflow === 'none';
   element('#expand-surface-row', HTMLElement).hidden = config.overflow !== 'expand';
   element('#max-rows', HTMLSelectElement).value = config.maxRows === null ? '' : String(config.maxRows);
   element('#max-rows-row', HTMLElement).hidden = config.overflow === 'none' || config.layout === 'row';
@@ -362,6 +365,7 @@ function syncControls(): void {
   element('#adaptive-tint-row', HTMLElement).hidden = !config.contrast;
   element('#context-actions', HTMLInputElement).checked = config.contextActions;
   element('#magnify', HTMLInputElement).checked = config.magnify;
+  element('#animations', HTMLInputElement).checked = config.animations;
   element('#try-context', HTMLButtonElement).hidden = !config.contextActions;
   for (const row of document.querySelectorAll<HTMLElement>('[data-show-for]')) {
     row.hidden = !(row.dataset.showFor ?? '').split(' ').includes(config.background);
@@ -405,11 +409,13 @@ function bindChoice<K extends 'layout' | 'overflow' | 'expandSurface'>(id: strin
 bindChoice('layout', 'layout', layouts);
 bindChoice('overflow', 'overflow', overflowChoices);
 bindChoice('expand-surface', 'expandSurface', expandSurfaces);
+const overflowTrigger = element('#overflow-trigger', HTMLSelectElement);
+overflowTrigger.addEventListener('change', () => update({ overflowTrigger: overflowTrigger.value === 'dots' ? 'dots' : 'more' }));
 for (const [id, key] of [['max-rows', 'maxRows'], ['max-visible', 'maxVisible']] as const) {
   const select = element(`#${id}`, HTMLSelectElement);
   select.addEventListener('change', () => update({ [key]: select.value ? Number(select.value) : null }));
 }
-for (const [id, key] of [['scroll-compact', 'scrollCompact'], ['contrast', 'contrast'], ['adaptive-tint', 'adaptiveTint'], ['context-actions', 'contextActions'], ['magnify', 'magnify']] as const) {
+for (const [id, key] of [['scroll-compact', 'scrollCompact'], ['contrast', 'contrast'], ['adaptive-tint', 'adaptiveTint'], ['context-actions', 'contextActions'], ['magnify', 'magnify'], ['animations', 'animations']] as const) {
   const input = element(`#${id}`, HTMLInputElement);
   input.addEventListener('change', () => update({ [key]: input.checked }));
 }

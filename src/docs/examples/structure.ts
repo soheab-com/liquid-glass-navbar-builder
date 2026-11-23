@@ -1,10 +1,10 @@
 import { mountLiquidGlassNavbar } from '@soheab-com/liquid-glass-navbar';
 import type { Example } from '../example.js';
 
-export const run: Example<{ labels: boolean }> = ({ nav, output, controls }) => {
+export const run: Example<{ labels: boolean }> = ({ nav, output, controls: { labels } }) => {
   // #region
   const navbar = mountLiquidGlassNavbar(nav, {
-    labels: controls.labels,
+    labels,
     onSelect(item) {
       output.value = `Tab: ${item.getAttribute('aria-label')}`;
     },

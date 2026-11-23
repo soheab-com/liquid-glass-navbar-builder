@@ -1,7 +1,7 @@
 import { mountLiquidGlassNavbar, type PopoverPlacement } from '@soheab-com/liquid-glass-navbar';
 import type { Example } from '../example.js';
 
-export const run: Example<{ placement: PopoverPlacement }> = ({ nav, stage, output, controls }) => {
+export const run: Example<{ placement: PopoverPlacement }> = ({ nav, stage, output, controls: { placement } }) => {
   // #region
   const navbar = mountLiquidGlassNavbar(nav, {});
   const entries = ['New note', 'New checklist', 'New folder'].map((label) => {
@@ -13,7 +13,7 @@ export const run: Example<{ placement: PopoverPlacement }> = ({ nav, stage, outp
     return entry;
   });
   const create = nav.querySelector<HTMLButtonElement>('#create')!;
-  navbar.createPopover(create, entries, { label: 'Create', placement: controls.placement, boundary: stage });
+  navbar.createPopover(create, entries, { label: 'Create', placement, boundary: stage });
   // #endregion
   return navbar;
 };

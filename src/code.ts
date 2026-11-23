@@ -79,11 +79,13 @@ export function scriptFor(config: Config): string {
   const overflow = overflowValue(config);
   if (overflow) {
     const parts = [`style: '${overflow.style}'`];
+    if (overflow.trigger) parts.push(`trigger: '${overflow.trigger}'`);
     if (overflow.surface) parts.push(`surface: '${overflow.surface}'`);
     if (overflow.maxVisible !== undefined) parts.push(`maxVisible: ${overflow.maxVisible}`);
     options.push(`  overflow: { ${parts.join(', ')} },`);
     if (config.maxRows !== null && config.layout !== 'row') options.push(`  maxRows: ${config.maxRows},`);
   }
+  if (config.animations) options.push('  animations: true, // or { reflow, popovers, tap, badges }');
   if (config.magnify) options.push('  magnify: true, // or { scale: 1.4, lift: 10, range: 110 }');
   if (config.scrollCompact) options.push('  scrollCompact: true, // or { source: yourScrollingElement }');
   if (config.contrast) {

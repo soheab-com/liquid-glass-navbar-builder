@@ -49,12 +49,14 @@ export interface Config {
   maxRows: number | null;
   overflow: OverflowChoice;
   expandSurface: ExpandSurface;
+  overflowTrigger: 'more' | 'dots';
   maxVisible: number | null;
   scrollCompact: boolean;
   contrast: boolean;
   adaptiveTint: boolean;
   contextActions: boolean;
   magnify: boolean;
+  animations: boolean;
   items: Item[];
 }
 
@@ -99,12 +101,14 @@ export const defaultConfig = (): Config => ({
   maxRows: null,
   overflow: 'none',
   expandSurface: 'shared',
+  overflowTrigger: 'more',
   maxVisible: null,
   scrollCompact: false,
   contrast: false,
   adaptiveTint: false,
   contextActions: false,
   magnify: false,
+  animations: false,
   items: [
     item('Home', 'home'),
     item('Schedule', 'calendar'),
@@ -169,12 +173,14 @@ export function parseConfig(value: unknown): Config {
     maxRows: raw.maxRows === null || raw.maxRows === undefined ? null : clamp(raw.maxRows, 1, 4, 2),
     overflow: pick(overflowChoices, raw.overflow, base.overflow),
     expandSurface: pick(expandSurfaces, raw.expandSurface, base.expandSurface),
+    overflowTrigger: raw.overflowTrigger === 'dots' ? 'dots' : 'more',
     maxVisible: raw.maxVisible === null || raw.maxVisible === undefined ? null : clamp(raw.maxVisible, 1, 12, 4),
     scrollCompact: bool(raw.scrollCompact, base.scrollCompact),
     contrast: bool(raw.contrast, base.contrast),
     adaptiveTint: bool(raw.adaptiveTint, base.adaptiveTint),
     contextActions: bool(raw.contextActions, base.contextActions),
     magnify: bool(raw.magnify, base.magnify),
+    animations: bool(raw.animations, base.animations),
     items: items.length > 0 ? items : base.items,
   };
 }
@@ -213,10 +219,11 @@ export function decodeConfig(encoded: string): Config | null {
 }
 
 /** The navbar's `overflow` option, or undefined when More is off. */
-export const overflowValue = (config: Config): { style: 'menu' | 'expand'; surface?: ExpandSurface; maxVisible?: number } | undefined => {
+export const overflowValue = (config: Config): { style: 'menu' | 'expand'; trigger?: 'dots'; surface?: ExpandSurface; maxVisible?: number } | undefined => {
   if (config.overflow === 'none') return undefined;
   return {
     style: config.overflow,
+    ...(config.overflowTrigger === 'dots' ? { trigger: 'dots' as const } : {}),
     ...(config.overflow === 'expand' && config.expandSurface !== 'shared' ? { surface: config.expandSurface } : {}),
     ...(config.maxVisible === null ? {} : { maxVisible: config.maxVisible }),
   };

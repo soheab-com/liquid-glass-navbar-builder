@@ -5,9 +5,12 @@ import typescript from 'highlight.js/lib/languages/typescript';
 import xml from 'highlight.js/lib/languages/xml';
 import { icons, type IconName } from '../icons.js';
 import './docs.css';
+import { glideFrom, reveal, reducedMotion } from './motion.js';
 import { themeButton } from './theme.js';
 import type { Example } from './example.js';
 import { groups, loadSettings, mountSiteBar, onSettingsChange } from './site-bar.js';
+import * as animationsExample from './examples/animations.js';
+import animationsSource from './examples/animations.ts?raw';
 import * as badges from './examples/badges.js';
 import badgesSource from './examples/badges.ts?raw';
 import * as compact from './examples/compact.js';
@@ -93,6 +96,28 @@ const many = (count: number): ItemSpec[] => [
 
 // ---- Showing an example's real source ----
 
+type Nested = { [key: string]: Value | Nested };
+
+/** Dotted state keys (`overflow.style`) become nested objects, the shape the examples' typed values have. */
+function nested(state: State): Nested {
+  const result: Nested = {};
+  for (const [key, value] of Object.entries(state)) {
+    const path = key.split('.');
+    // Inside an option object, 0 and empty mean "not set": leave them out, as the code tab does.
+    if (path.length > 1 && (value === 0 || value === '')) continue;
+    let node = result;
+    for (const part of path.slice(0, -1)) node = (node[part] ??= {}) as Nested;
+    node[path[path.length - 1]!] = value;
+  }
+  return result;
+}
+
+/** An object literal for the code tab; 0 and empty values are left out, the same as leaving the option unset. */
+function objectLiteral(value: Nested): string {
+  const entries = Object.entries(value).filter(([, entry]) => entry !== 0 && entry !== '');
+  return `{ ${entries.map(([key, entry]) => `${key}: ${typeof entry === 'object' ? objectLiteral(entry) : literal(entry)}`).join(', ')} }`;
+}
+
 const literal = (value: Value): string => (typeof value === 'string' ? `'${value.replaceAll("'", "\\'")}'` : String(value));
 
 /**
@@ -112,21 +137,18 @@ function exampleCode(source: string, state: State): string {
   prelude.push("const nav = document.querySelector<HTMLElement>('nav')!;");
   if (uses('stage')) prelude.push("const stage = document.querySelector<HTMLElement>('.example')!;");
   if (uses('output')) prelude.push("const output = document.querySelector('output')!;");
-  const keys = [...new Set([...body.matchAll(/\bcontrols\.(\w+)/g)].map((match) => match[1]!))];
-  if (keys.length) {
-    // The controls keep the example's own type, so the snippet compiles as it is.
-    const start = lines.findIndex((line) => line.startsWith('interface Controls'));
-    let type = 'Controls';
-    if (start >= 0) {
-      const close = lines.findIndex((line, index) => index > start && line.startsWith('}'));
-      prelude.push('', ...lines.slice(start, close + 1), '');
-    } else {
-      type = /Example<(\{.*\})>/.exec(source)?.[1] ?? 'Record<string, unknown>';
-    }
-    const values = keys.map((key) => `${key}: ${literal(state[key]!)}`);
-    prelude.push(values.join(', ').length < 60
-      ? `const controls: ${type} = { ${values.join(', ')} };`
-      : `const controls: ${type} = {\n${values.map((value) => `  ${value},`).join('\n')}\n};`);
+  // The example's values: each one it uses becomes a const typed like the example (with the navbar's own types).
+  const signature = /Example<\{ (.*) \}>/.exec(source)?.[1] ?? '';
+  const members = signature.split('; ').map((member) => {
+    const colon = member.indexOf(': ');
+    return [member.slice(0, colon), member.slice(colon + 2)] as const;
+  }).filter(([name]) => name && uses(name));
+  const values = nested(state);
+  if (members.length) prelude.push('');
+  for (const [name, type] of members) {
+    const value = values[name];
+    const plain = ['boolean', 'number', 'string'].includes(type);
+    prelude.push(`const ${name}${plain ? '' : `: ${type}`} = ${typeof value === 'object' ? objectLiteral(value) : literal(value as Value)};`);
   }
   return `${prelude.join('\n')}\n\n${body}`;
 }
@@ -155,8 +177,21 @@ const n = (state: State, key: string): number => Number(state[key]);
 const b = (state: State, key: string): boolean => state[key] === true;
 
 /** Builds a demo card right away (so the page keeps its height) and returns the function that mounts the bar. */
-function mountDemo(host: HTMLElement, demo: Demo): () => void {
-  const state: State = { ...demo.state };
+function mountDemo(host: HTMLElement, demo: Demo, id: string): () => void {
+  const defaults: State = { ...demo.state };
+  // Your changes to an example are kept in this browser (only for controls the example still has).
+  const storageKey = `lg-navbar-docs:example:${id}`;
+  const saved = ((): State => {
+    try { return JSON.parse(localStorage.getItem(storageKey) ?? '{}') as State; } catch { return {}; }
+  })();
+  const state: State = { ...defaults };
+  for (const [key, value] of Object.entries(saved)) {
+    if (key === 'codeTab') continue;
+    if (key in defaults || key === 'width') state[key] = value;
+  }
+  const persist = (): void => {
+    try { localStorage.setItem(storageKey, JSON.stringify({ ...state, codeTab })); } catch { /* Not saved; it still works. */ }
+  };
   // On a phone the card is already narrow, so width demos start at full width.
   if (demo.stage?.width && (state.width === undefined || matchMedia('(max-width: 700px)').matches)) state.width = 100;
   const card = document.createElement('div');
@@ -178,9 +213,15 @@ function mountDemo(host: HTMLElement, demo: Demo): () => void {
   host.replaceChildren(card);
 
   let navbar: LiquidGlassNavbar | undefined;
-  let codeTab: 'ts' | 'html' = 'ts';
+  let codeTab: 'ts' | 'html' = saved.codeTab === 'html' ? 'html' : 'ts';
 
   function render(): void {
+    // Where each tab was, so the new bar can glide from there instead of jumping.
+    const before = new Map<string, DOMRect>();
+    for (const item of stage.querySelectorAll<HTMLElement>('nav button, nav a')) {
+      const key = item.getAttribute('aria-label') ?? item.textContent?.trim() ?? '';
+      if (key && item.getClientRects().length && !item.closest('.lg-popover')) before.set(key, item.getBoundingClientRect());
+    }
     navbar?.destroy();
     stage.replaceChildren();
     if (demo.stage?.scroll) {
@@ -198,7 +239,12 @@ function mountDemo(host: HTMLElement, demo: Demo): () => void {
     dock.append(nav);
     stage.append(dock);
     frame.style.width = demo.stage?.width ? `${n(state, 'width')}%` : '';
-    navbar = demo.example.run({ nav, stage, output, controls: state as never });
+    navbar = demo.example.run({ nav, stage, output, controls: nested(state) as never });
+    if (before.size) {
+      glideFrom(before, [...nav.querySelectorAll<HTMLElement>(':scope button, :scope a')]
+        .filter((item) => item.getClientRects().length && !item.closest('.lg-popover'))
+        .map((item) => [item.getAttribute('aria-label') ?? item.textContent?.trim() ?? '', item] as [string, HTMLElement]));
+    }
     renderCode();
   }
 
@@ -210,7 +256,7 @@ function mountDemo(host: HTMLElement, demo: Demo): () => void {
       <button type="button" class="dd-copy">Copy</button></div>
       <pre tabindex="0"><code>${highlight.highlight(text, { language: codeTab }).value}</code></pre>`;
     for (const button of code.querySelectorAll<HTMLButtonElement>('[data-tab]')) {
-      button.addEventListener('click', () => { codeTab = button.dataset.tab === 'html' ? 'html' : 'ts'; renderCode(); });
+      button.addEventListener('click', () => { codeTab = button.dataset.tab === 'html' ? 'html' : 'ts'; persist(); renderCode(); });
     }
     code.querySelector('.dd-copy')?.addEventListener('click', async (event) => {
       await navigator.clipboard.writeText(text);
@@ -239,16 +285,20 @@ function mountDemo(host: HTMLElement, demo: Demo): () => void {
         input.step = String(control.step ?? 1);
       }
     }
+    input.dataset.key = control.key;
     const value = document.createElement('span');
     value.className = 'dd-value';
     const show = (): void => {
       if (control.type === 'range') value.textContent = state[control.key] === 0 && control.zero ? control.zero : `${state[control.key]}${control.unit ?? ''}`;
     };
     show();
+    input.addEventListener('sync', show);
     const apply = (): void => {
       state[control.key] = input instanceof HTMLInputElement && input.type === 'checkbox' ? input.checked
         : control.type === 'range' ? Number(input.value) : input.value;
       show();
+      persist();
+      resetButton.hidden = !changed();
       if (control.key === 'width') frame.style.width = `${n(state, 'width')}%`;
       else render();
     };
@@ -259,6 +309,28 @@ function mountDemo(host: HTMLElement, demo: Demo): () => void {
     else wrapper.append(text, input, value);
     controls.append(wrapper);
   }
+  // Reset brings back the example's own values (and forgets what was saved).
+  const changed = (): boolean => Object.keys(defaults).some((key) => state[key] !== defaults[key])
+    || (demo.stage?.width === true && state.width !== (defaults.width ?? 100));
+  const resetButton = document.createElement('button');
+  resetButton.type = 'button';
+  resetButton.className = 'dd-action dd-reset';
+  resetButton.textContent = 'Reset';
+  resetButton.addEventListener('click', () => {
+    try { localStorage.removeItem(storageKey); } catch { /* Nothing saved. */ }
+    for (const key of Object.keys(state)) delete state[key];
+    Object.assign(state, defaults);
+    if (demo.stage?.width && (state.width === undefined || matchMedia('(max-width: 700px)').matches)) state.width = 100;
+    for (const input of controls.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-key]')) {
+      const value = state[input.dataset.key ?? ''];
+      if (input instanceof HTMLInputElement && input.type === 'checkbox') input.checked = value === true;
+      else input.value = String(value);
+      input.dispatchEvent(new Event('sync'));
+    }
+    resetButton.hidden = true;
+    frame.style.width = demo.stage?.width ? `${n(state, 'width')}%` : '';
+    render();
+  });
   for (const entry of demo.actions ?? []) {
     const button = document.createElement('button');
     button.type = 'button';
@@ -266,6 +338,10 @@ function mountDemo(host: HTMLElement, demo: Demo): () => void {
     button.textContent = entry.label;
     button.addEventListener('click', () => entry.run(render, output));
     controls.append(button);
+  }
+  if (all.length) {
+    resetButton.hidden = !changed();
+    controls.append(resetButton);
   }
   if (!controls.childElementCount) controls.remove();
   frame.style.width = demo.stage?.width ? `${n(state, 'width')}%` : '';
@@ -315,12 +391,12 @@ const demos: Record<string, Demo> = {
     example: position, source: positionSource,
   },
   look: {
-    state: { theme: 'light', accent: '#2152a5', unselected: '#293b60', background: 'theme', transparency: 40 },
+    state: { theme: 'light', 'colors.selected': '#2152a5', 'colors.unselected': '#293b60', tint: 'theme', transparency: 40 },
     controls: [
       { key: 'theme', label: 'Theme', type: 'select', options: [['light', 'Light'], ['dark', 'Dark']] },
-      { key: 'accent', label: 'Selected', type: 'color' },
-      { key: 'unselected', label: 'Unselected', type: 'color' },
-      { key: 'background', label: 'Background', type: 'select', options: [['theme', 'Theme glass'], ['solid', 'Solid tint'], ['gradient', 'Gradient']] },
+      { key: 'colors.selected', label: 'Selected', type: 'color' },
+      { key: 'colors.unselected', label: 'Unselected', type: 'color' },
+      { key: 'tint', label: 'Background', type: 'select', options: [['theme', 'Theme glass'], ['solid', 'Solid tint'], ['gradient', 'Gradient']] },
       { key: 'transparency', label: 'Transparency', type: 'range', min: 0, max: 100, unit: '%' },
     ],
     stage: { height: 220 },
@@ -328,10 +404,10 @@ const demos: Record<string, Demo> = {
     example: look, source: lookSource,
   },
   equal: {
-    state: { equal: true, overflow: 'natural', long: false },
+    state: { equalWidth: true, equalWidthOverflow: 'natural', long: false },
     controls: [
-      { key: 'equal', label: 'Equal width', type: 'check' },
-      { key: 'overflow', label: "When it doesn't fit", type: 'select', options: [['natural', 'Natural widths'], ['truncate', 'Cut off labels'], ['grow', 'Grow the bar']] },
+      { key: 'equalWidth', label: 'Equal width', type: 'check' },
+      { key: 'equalWidthOverflow', label: "When it doesn't fit", type: 'select', options: [['natural', 'Natural widths'], ['truncate', 'Cut off labels'], ['grow', 'Grow the bar']] },
       { key: 'long', label: 'Long label', type: 'check' },
     ],
     stage: { height: 200, width: true },
@@ -339,8 +415,8 @@ const demos: Record<string, Demo> = {
     example: equal, source: equalSource,
   },
   visibility: {
-    state: { icon: true, label: true },
-    controls: [{ key: 'icon', label: 'Map icon', type: 'check' }, { key: 'label', label: 'Map label', type: 'check' }],
+    state: { 'visibility.icon': true, 'visibility.label': true },
+    controls: [{ key: 'visibility.icon', label: 'Map icon', type: 'check' }, { key: 'visibility.label', label: 'Map label', type: 'check' }],
     stage: { height: 200, backdrop: 'aurora' },
     html: () => navHtml([[tab('Home', 'home', current), tab('Schedule', 'calendar'), tab('Map', 'map', { 'aria-label': 'Map' })]]),
     example: visibility, source: visibilitySource,
@@ -360,11 +436,11 @@ const demos: Record<string, Demo> = {
     example: reorder, source: reorderSource,
   },
   magnify: {
-    state: { scale: 1.4, lift: 10, range: 110, position: 'bottom' },
+    state: { 'magnify.scale': 1.4, 'magnify.lift': 10, 'magnify.range': 110, position: 'bottom' },
     controls: [
-      { key: 'scale', label: 'Scale', type: 'range', min: 1, max: 2, step: .05 },
-      { key: 'lift', label: 'Lift', type: 'range', min: 0, max: 24, unit: 'px' },
-      { key: 'range', label: 'Range', type: 'range', min: 40, max: 240, unit: 'px' },
+      { key: 'magnify.scale', label: 'Scale', type: 'range', min: 1, max: 2, step: .05 },
+      { key: 'magnify.lift', label: 'Lift', type: 'range', min: 0, max: 24, unit: 'px' },
+      { key: 'magnify.range', label: 'Range', type: 'range', min: 40, max: 240, unit: 'px' },
       { key: 'position', label: 'Position', type: 'select', options: [['bottom', 'Bottom'], ['top', 'Top'], ['left', 'Left'], ['right', 'Right']] },
     ],
     stage: { height: 320 },
@@ -384,13 +460,14 @@ const demos: Record<string, Demo> = {
     example: rows, source: rowsSource,
   },
   more: {
-    state: { style: 'menu', surface: 'shared', layout: 'row', maxRows: 2, maxVisible: 0, count: 12, width: 60 },
+    state: { 'overflow.style': 'menu', 'overflow.trigger': 'more', 'overflow.surface': 'shared', layout: 'row', maxRows: 2, 'overflow.maxVisible': 0, count: 12, width: 60 },
     controls: [
-      { key: 'style', label: 'More', type: 'select', options: [['menu', 'Menu'], ['expand', 'Row of icons']] },
-      { key: 'surface', label: 'Icons', type: 'select', options: [['shared', 'One pill'], ['individual', 'Separate glass']] },
+      { key: 'overflow.style', label: 'More', type: 'select', options: [['menu', 'Menu'], ['expand', 'Row of icons']] },
+      { key: 'overflow.trigger', label: 'Button', type: 'select', options: [['more', 'Icon and label'], ['dots', 'Dots only (⋮)']] },
+      { key: 'overflow.surface', label: 'Icons', type: 'select', options: [['shared', 'One pill'], ['individual', 'Separate glass']] },
       { key: 'layout', label: 'Layout', type: 'select', options: [['row', 'One row'], ['wrap', 'Wrap'], ['rows', 'Pill per row']] },
       { key: 'maxRows', label: 'Max rows', type: 'range', min: 1, max: 3 },
-      { key: 'maxVisible', label: 'Max visible', type: 'range', min: 0, max: 8, zero: 'Fit' },
+      { key: 'overflow.maxVisible', label: 'Max visible', type: 'range', min: 0, max: 8, zero: 'Fit' },
       { key: 'count', label: 'Items', type: 'range', min: 4, max: 12 },
     ],
     stage: { height: 330, width: true },
@@ -434,14 +511,30 @@ const demos: Record<string, Demo> = {
     example: context, source: contextSource,
   },
   contrast: {
-    state: { adaptive: true, transparency: 100 },
+    state: { 'contrast.adaptiveTint': true, transparency: 100 },
     controls: [
-      { key: 'adaptive', label: 'Add tint over busy content', type: 'check' },
+      { key: 'contrast.adaptiveTint', label: 'Add tint over busy content', type: 'check' },
       { key: 'transparency', label: 'Transparency', type: 'range', min: 0, max: 100, unit: '%' },
     ],
     stage: { height: 340, backdrop: 'stories', scroll: stories },
     html: () => navHtml([basic()]),
     example: contrast, source: contrastSource,
+  },
+  animations: {
+    state: { 'animations.reflow': true, 'animations.popovers': true, 'animations.tap': true, 'animations.badges': true, width: 100 },
+    controls: [
+      { key: 'animations.reflow', label: 'Reflow glide', type: 'check' },
+      { key: 'animations.popovers', label: 'Spring popovers', type: 'check' },
+      { key: 'animations.tap', label: 'Tap feedback', type: 'check' },
+      { key: 'animations.badges', label: 'Badge pop', type: 'check' },
+    ],
+    stage: { height: 300, width: true },
+    html: () => navHtml([many(9)]),
+    example: animationsExample, source: animationsSource,
+    actions: [
+      { label: 'Add a badge', run: (_, output) => { output.closest('.dd-card')?.querySelector('.dd-stage')?.dispatchEvent(new CustomEvent('example:badge', { detail: 1 })); } },
+      { label: 'Clear it', run: (_, output) => { output.closest('.dd-card')?.querySelector('.dd-stage')?.dispatchEvent(new CustomEvent('example:badge', { detail: 0 })); } },
+    ],
   },
   persistence: {
     state: {},
@@ -467,9 +560,61 @@ const observer = new IntersectionObserver((entries) => {
 for (const host of document.querySelectorAll<HTMLElement>('[data-demo]')) {
   const demo = demos[host.dataset.demo ?? ''];
   if (!demo) continue;
-  pending.set(host, mountDemo(host, demo));
+  pending.set(host, mountDemo(host, demo, host.dataset.demo ?? ''));
   observer.observe(host);
 }
+
+// Every mention of an exported type links to its entry in the Types section, the one place they're described.
+const typeRows = new Map<string, string>();
+for (const row of document.querySelectorAll<HTMLElement>('#types tr[id^="type-"]')) {
+  for (const code of row.querySelectorAll('td:first-child code')) typeRows.set(code.textContent ?? '', row.id);
+}
+const typePattern = new RegExp(`\\b(${[...typeRows.keys()].sort((a, b) => b.length - a.length).join('|')})\\b`, 'g');
+for (const code of document.querySelectorAll<HTMLElement>('.dd-main code')) {
+  if (code.closest('#types td:first-child, pre, a')) continue;
+  const text = code.textContent ?? '';
+  if (!typePattern.test(text)) continue;
+  typePattern.lastIndex = 0;
+  const parts: (string | HTMLAnchorElement)[] = [];
+  let last = 0;
+  for (const match of text.matchAll(typePattern)) {
+    parts.push(text.slice(last, match.index));
+    const link = document.createElement('a');
+    link.href = `#${typeRows.get(match[1]!)}`;
+    link.className = 'dd-type-link';
+    link.textContent = match[1]!;
+    parts.push(link);
+    last = (match.index ?? 0) + match[0].length;
+  }
+  parts.push(text.slice(last));
+  code.replaceChildren(...parts.filter((part) => part !== ''));
+}
+
+// The phone contents open and close smoothly.
+const contentsPanel = document.querySelector<HTMLElement>('.dd-toc-panel');
+document.querySelector('.dd-toc details > summary')?.addEventListener('click', (event) => {
+  const details = (event.currentTarget as HTMLElement).parentElement as HTMLDetailsElement;
+  if (!contentsPanel || reducedMotion() || !matchMedia('(max-width: 960px)').matches) return;
+  event.preventDefault();
+  if (details.open) {
+    reveal(contentsPanel, false);
+    setTimeout(() => { if (contentsPanel.hidden) { details.open = false; contentsPanel.hidden = false; } }, 450);
+  } else {
+    contentsPanel.hidden = true;
+    details.open = true;
+    reveal(contentsPanel, true);
+  }
+});
+
+// After a jump, the section you land on briefly lights up so you can see where you are.
+export function landed(id: string): void {
+  const heading = document.getElementById(id)?.querySelector('h1, h2');
+  if (!heading || reducedMotion()) return;
+  heading.classList.remove('dd-landed');
+  void (heading as HTMLElement).offsetWidth;
+  heading.classList.add('dd-landed');
+}
+addEventListener('hashchange', () => landed(location.hash.slice(1)));
 
 // On narrow screens the contents start collapsed so the page itself comes first.
 const contents = document.querySelector<HTMLDetailsElement>('.dd-toc details');

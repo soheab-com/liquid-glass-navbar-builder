@@ -1,27 +1,13 @@
-import { mountLiquidGlassNavbar, type NavbarLayout } from '@soheab-com/liquid-glass-navbar';
+import { mountLiquidGlassNavbar, type NavbarLayout, type NavbarOverflowOptions } from '@soheab-com/liquid-glass-navbar';
 import type { Example } from '../example.js';
 
-interface Controls {
-  style: 'menu' | 'expand';
-  surface: 'shared' | 'individual';
-  layout: NavbarLayout;
-  maxRows: number;
-  maxVisible: number;
-}
-
-export const run: Example<Controls> = ({ nav, stage, output, controls }) => {
+export const run: Example<{ layout: NavbarLayout; maxRows: number; overflow: NavbarOverflowOptions }> = ({ nav, stage, output, controls: { layout, maxRows, overflow } }) => {
   // #region
   const navbar = mountLiquidGlassNavbar(nav, {
-    layout: controls.layout,
-    maxRows: controls.maxRows,
-    overflow: {
-      style: controls.style,
-      surface: controls.surface,
-      // 0 means: as many as fit.
-      ...(controls.maxVisible ? { maxVisible: controls.maxVisible } : {}),
-      // Keep the popover inside the example.
-      boundary: stage,
-    },
+    layout,
+    maxRows,
+    // Keep the popover inside the example.
+    overflow: { ...overflow, boundary: stage },
     onSelect(item) {
       output.value = `Selected ${item.getAttribute('aria-label')}`;
     },

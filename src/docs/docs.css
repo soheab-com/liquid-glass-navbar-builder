@@ -91,7 +91,7 @@ code { font-family: var(--mono); font-size: .86em; }
 .dd-top {
   position: sticky; top: 12px; z-index: 1000;
   display: flex; align-items: center; gap: 28px;
-  width: min(100% - 24px, 1160px);
+  width: calc(100% - 24px);
   margin: 12px auto 0;
   padding: 12px 22px;
   border-radius: 20px;
@@ -104,12 +104,12 @@ code { font-family: var(--mono); font-size: .86em; }
 
 .dd-layout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 720px);
-  justify-content: center;
-  gap: 56px;
-  width: min(100%, 1180px);
-  margin: 0 auto;
-  padding: 40px 20px 200px;
+  /* Full width: the content takes all the room beside the contents list. */
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: clamp(28px, 4vw, 56px);
+  width: 100%;
+  margin: 0;
+  padding: 40px clamp(20px, 3vw, 48px) 200px;
 }
 .dd-toc { position: sticky; top: 92px; align-self: start; }
 .dd-toc details > summary { display: none; }
@@ -241,19 +241,23 @@ pre {
 /* The docs' own bars are the component itself. */
 .dd-site-bar { --lg-nav-muted: var(--ink); --lg-nav-accent: var(--lake); --lg-nav-offset: 16px; }
 @media (prefers-color-scheme: dark) {
-:root:not([data-theme="light"]) .dd-site-bar {
+:root:not([data-theme="light"]) :is(.dd-site-bar, .ds-tabs) {
+  /* A clearly blue selected colour against a neutral unselected one, so the gradual highlight shows in dark mode. */
+  --lg-nav-muted: #c3cfdc; --lg-nav-accent: #4da3ff;
     --lg-nav-opaque: #1c2c3d; --lg-nav-surface: #1c2c3dbf; --lg-nav-rim: #ffffff30;
     --lg-nav-highlight: #ffffff40; --lg-nav-shadow: #00000080;
   }
 }
-:root[data-theme="dark"] .dd-site-bar {
+:root[data-theme="dark"] :is(.dd-site-bar, .ds-tabs) {
+  /* A clearly blue selected colour against a neutral unselected one, so the gradual highlight shows in dark mode. */
+  --lg-nav-muted: #c3cfdc; --lg-nav-accent: #4da3ff;
     --lg-nav-opaque: #1c2c3d; --lg-nav-surface: #1c2c3dbf; --lg-nav-rim: #ffffff30;
     --lg-nav-highlight: #ffffff40; --lg-nav-shadow: #00000080;
   }
 
 
 @media (max-width: 960px) {
-  .dd-layout { grid-template-columns: minmax(0, 720px); gap: 20px; padding-top: 28px; }
+  .dd-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; padding-top: 28px; }
   .dd-toc { position: static; }
   .dd-toc details { border-radius: 20px; }
   .dd-toc details > summary {
@@ -312,9 +316,54 @@ pre {
 .dd-site-bar > [data-navbar-section] > :is(a, button) { min-width: 44px; }
 
 /* Settings page */
-.ds-main { width: min(100% - 40px, 760px); margin: 0 auto; padding: 48px 0 220px; }
+.ds-main { width: 100%; margin: 0; padding: 48px clamp(20px, 3vw, 48px) 220px; }
 .ds-main h1 { margin: 0 0 14px; font: 700 clamp(2.2rem, 5.5vw, 3.4rem)/1.02 var(--display); letter-spacing: -.04em; }
-.ds-form { display: grid; gap: 22px; margin-top: 30px; }
+.ds-form { display: grid; gap: 22px; margin-top: 22px; }
+/* Centred, full width: the heading and tabs in the middle, the panel across the page. */
+.ds-main > h1, .ds-main > .dd-lede { text-align: center; margin-inline: auto; }
+.ds-main > .dd-lede { max-width: 66ch; }
+/* The group tabs are the navbar itself, placed in the page. */
+.ds-tabs { display: flex; width: max-content; max-width: 100%; margin: 26px auto 0; --lg-nav-muted: var(--ink); --lg-nav-accent: var(--lake); }
+.ds-tabs > button { min-width: 0; padding-inline: 14px; font-size: .8rem; }
+.ds-actions { justify-content: center; }
+/* One setting per row. On wide screens its explanation is always visible on the right. */
+.ds-setting { display: grid; grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--edge); padding: 6px 0; }
+.ds-setting[hidden] { display: none; }
+.ds-setting > .ds-field { border-top: 0; padding: 0; }
+.ds-desc { display: none; }
+@media (min-width: 900px) {
+  .ds-setting { grid-template-columns: minmax(300px, 520px) minmax(0, 1fr); column-gap: 56px; align-items: center; padding: 12px 0; }
+  .ds-desc { display: block; color: var(--ink-soft); font-size: .9rem; line-height: 1.5; }
+  .ds-desc p { margin: 0 0 2px; max-width: 70ch; }
+  .ds-desc a { font-size: .85rem; font-weight: 600; }
+  .ds-setting .ds-help { display: none; }
+}
+.ds-name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ds-field--check .ds-name { grid-column: 2; }
+.ds-help {
+  display: inline-grid; place-items: center;
+  width: 26px; height: 26px; flex: none;
+  padding: 0; border: 0; border-radius: 50%;
+  background: none; color: var(--ink-soft); cursor: help;
+}
+.ds-help:hover, .ds-help[aria-expanded="true"] { color: var(--lake); }
+.ds-help svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+/* The explanation popover: frosted like the rest of the page. */
+.lg-popover.ds-help-popover {
+  max-width: min(320px, calc(100vw - 24px));
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7);
+  backdrop-filter: blur(24px) saturate(1.7);
+  border: 1px solid var(--edge);
+  color: var(--ink);
+  font-size: .9rem;
+  line-height: 1.5;
+  --lg-popover-background: var(--glass-strong);
+}
+.ds-help-text p { margin: 0 0 6px; }
+.ds-help-text a { font-weight: 600; }
 .ds-group {
   margin: 0;
   padding: 18px 22px 20px;
@@ -364,11 +413,10 @@ pre {
 }
 
 /* Room for the site bars on their edge. */
-[data-site-bar="top"] .dd-top { position: relative; top: 0; }
-[data-site-bar="top"] :is(.dd-layout, .ds-main) { padding-top: 170px; }
-[data-site-bar="top"] .dd-toc { top: 170px; }
-[data-site-bar="top"] { scroll-padding-top: 170px; }
-[data-site-bar="top"] body { padding-bottom: 0; }
+/* At the top, the bars sit just below the pinned header; the script measures the room they take (--dd-top-room). */
+[data-site-bar="top"] :is(.dd-layout, .ds-main) { padding-top: calc(var(--dd-top-room, 150px) + 24px); }
+[data-site-bar="top"] .dd-toc { top: calc(var(--dd-top-room, 150px) + 92px); }
+[data-site-bar="top"] { scroll-padding-top: calc(var(--dd-top-room, 150px) + 84px); }
 @media (min-width: 961px) {
   [data-site-bar="left"] .dd-layout { padding-left: 190px; }
   [data-site-bar="right"] .dd-layout { padding-right: 190px; }
@@ -403,9 +451,9 @@ pre {
 
 /* The example bars get dark glass in dark mode. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .dd-stage nav:not(.dd-dark-bar) { --lg-nav-opaque: #22324a; --lg-nav-surface: #22324ab8; --lg-nav-muted: #e6eefb; --lg-nav-accent: #9fc6ff; --lg-nav-rim: #b9cdf04d; --lg-nav-highlight: #ffffff40; --lg-nav-shadow: #00000080; }
+  :root:not([data-theme="light"]) .dd-stage nav:not(.dd-dark-bar) { --lg-nav-opaque: #22324a; --lg-nav-surface: #22324ab8; --lg-nav-muted: #c3cfdc; --lg-nav-accent: #4da3ff; --lg-nav-rim: #b9cdf04d; --lg-nav-highlight: #ffffff40; --lg-nav-shadow: #00000080; }
 }
-:root[data-theme="dark"] .dd-stage nav:not(.dd-dark-bar) { --lg-nav-opaque: #22324a; --lg-nav-surface: #22324ab8; --lg-nav-muted: #e6eefb; --lg-nav-accent: #9fc6ff; --lg-nav-rim: #b9cdf04d; --lg-nav-highlight: #ffffff40; --lg-nav-shadow: #00000080; }
+:root[data-theme="dark"] .dd-stage nav:not(.dd-dark-bar) { --lg-nav-opaque: #22324a; --lg-nav-surface: #22324ab8; --lg-nav-muted: #c3cfdc; --lg-nav-accent: #4da3ff; --lg-nav-rim: #b9cdf04d; --lg-nav-highlight: #ffffff40; --lg-nav-shadow: #00000080; }
 
 .dd-theme {
   display: inline-flex; align-items: center; gap: 6px;
@@ -423,3 +471,17 @@ pre {
 .dd-control select { min-width: 0; max-width: 100%; }
 .dd-control > span:empty { display: none; }
 @media (max-width: 360px) { .dd-roomy { display: none; } .dd-links { gap: 12px; } .dd-top { gap: 10px; } }
+.dd-type-link { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--lake) 55%, transparent); text-underline-offset: .2em; }
+.dd-type-link:hover { color: var(--lake); }
+#types tr:target td { background: color-mix(in srgb, var(--lake) 12%, transparent); }
+
+/* After a jump, the heading you land on lights up for a moment. */
+@keyframes dd-landed { from { background-color: color-mix(in srgb, var(--lake) 22%, transparent); } to { background-color: transparent; } }
+.dd-landed { animation: dd-landed 1.4s ease-out; border-radius: 10px; margin-inline: -10px; padding-inline: 10px; }
+.dd-reset { margin-left: auto; }
+.dd-reset[hidden] { display: none; }
+
+/* While the main bar's More is open, the section bar fades out of its way. */
+.dd-site-bar--sections { transition: opacity .18s ease; }
+.dd-site-bar--sections.dd-site-bar--away { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .dd-site-bar--sections { transition: none; } }

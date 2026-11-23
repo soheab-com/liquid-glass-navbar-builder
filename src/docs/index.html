@@ -40,6 +40,7 @@
         <li><a href="#swiping">Swiping</a></li>
         <li><a href="#reordering">Reordering</a></li>
         <li><a href="#magnify">Magnify</a></li>
+        <li><a href="#animations">Animations</a></li>
         <li class="dd-toc-group">Layout</li>
         <li><a href="#rows">Rows</a></li>
         <li><a href="#more">More</a></li>
@@ -53,6 +54,7 @@
         <li class="dd-toc-group">Reference</li>
         <li><a href="#options">Options</a></li>
         <li><a href="#methods">Methods</a></li>
+        <li><a href="#types">Types</a></li>
         <li><a href="#attributes">HTML attributes</a></li>
         <li><a href="#css">CSS variables</a></li>
         <li><a href="#accessibility">Accessibility and motion</a></li>
@@ -127,7 +129,7 @@
 
     <section id="swiping">
       <h2>Swiping</h2>
-      <p>Press a tab and slide. The highlight follows your finger and swells into a clear bubble; lift to pick the item under it. Past the first or last item it stretches like a rubber band, and when you let go it keeps the speed of your finger as it settles.</p>
+      <p>Press a tab and slide. The highlight follows your finger and swells into a clear bubble, and only the part of a tab under it takes the selected color, so halfway between two tabs you see half of each. Lift to pick the item under it. Past the first or last item it stretches like a rubber band, and when you let go it keeps the speed of your finger as it settles.</p>
       <p>Swipes cross sections and include actions. Add <code>data-navbar-no-swipe</code> to an item or section to keep it out; tapping and the keyboard still work there.</p>
       <div data-demo="swipe"></div>
     </section>
@@ -144,6 +146,19 @@
       <div data-demo="magnify"></div>
     </section>
 
+    <section id="animations">
+      <h2>Animations</h2>
+      <p>The bar always moves with springs: the highlight, swipes and compacting. <code>animations</code> adds more motion on top, off unless you turn it on. Pass <code>true</code> for all of it, or choose:</p>
+      <ul>
+        <li><code>reflow</code>: items glide to their new place when they move between the bar and More, change rows, or the bar changes size.</li>
+        <li><code>popovers</code>: More and anchored popovers, which always open on a spring, get a little overshoot.</li>
+        <li><code>tap</code>: a pressed tab squishes a little, and a newly selected icon bounces.</li>
+        <li><code>badges</code>: badges pop in, pulse when they change, and shrink away.</li>
+      </ul>
+      <p>Every animation can be interrupted and turns around from where it is. None of it runs with Reduce Motion. The springs are exported as <code>createSpring()</code>, so your own motion can match. Drag the width slider and use the badge buttons.</p>
+      <div data-demo="animations"></div>
+    </section>
+
     <section id="rows">
       <h2>Rows</h2>
       <p><code>layout: 'wrap'</code> wraps the items into rows inside one glass surface. <code>layout: 'rows'</code> gives each row its own centered pill. The bar measures the real icons, labels, padding and gaps, so every item fits, and it reflows when the space changes. Drag the width slider.</p>
@@ -153,15 +168,15 @@
 
     <section id="more">
       <h2>More</h2>
-      <p><code>overflow</code> moves the items that don't fit into a More button. The <code>'menu'</code> style lists them in an anchored menu. The <code>'expand'</code> style opens a row of glass icons, in one shared pill or each in its own glass. Limit the bar with <code>maxRows</code> (for multi-row layouts) or <code>maxVisible</code>.</p>
-      <p>The current tab stays selected when it moves behind More, and More shows that it holds the current tab. Slide onto More during a swipe and it opens, so the same finger can carry on into it. More closes on Escape, an outside press, another tab, or a selection. Keep an item in the bar with <code>data-navbar-overflow="never"</code>.</p>
+      <p><code>overflow</code> moves the items that don't fit into a More button. The <code>'menu'</code> style lists them in an anchored menu. The <code>'expand'</code> style opens a row of glass icons, in one shared pill or each in its own glass. Limit the bar with <code>maxRows</code> (for multi-row layouts) or <code>maxVisible</code>. <code>trigger: 'dots'</code> shows the More button as a vertical ⋮ icon without a label. More stays open while the page scrolls, and a tap outside closes it; set <code>closeOnScroll: true</code> to close it as soon as the page scrolls.</p>
+      <p>The current tab stays selected when it moves behind More, and More shows that it holds the current tab. Slide onto More during a swipe and it opens, so the same finger can carry on into it. More closes on Escape, a tap outside, another tab, or a selection. Keep an item in the bar with <code>data-navbar-overflow="never"</code>.</p>
       <div data-demo="more"></div>
     </section>
 
     <section id="popovers">
       <h2>Popovers</h2>
       <p><code>createPopover(item, content, options)</code> anchors a popover to an item in the bar, such as a Create action. Tapping or swiping to the item toggles it. A small pointer stays aligned with the item when the popover shifts away from an edge or flips to the other side.</p>
-      <p>For a trigger outside the bar, use the exported <code>createAnchoredPopover(trigger, content, options)</code>. Both close on Escape, an outside press, or a choice inside, and return focus to the trigger when it was inside.</p>
+      <p>For a trigger outside the bar, use the exported <code>createAnchoredPopover(trigger, content, options)</code>. Both close on Escape, a tap outside, or a choice inside, and return focus to the trigger when it was inside. A finger that starts scrolling the page leaves them open; pass <code>closeOnScroll: true</code> to close on scroll instead.</p>
       <div data-demo="popover"></div>
     </section>
 
@@ -173,7 +188,7 @@
 
     <section id="scroll-compact">
       <h2>Scroll compact</h2>
-      <p><code>scrollCompact</code> hides the labels while the page scrolls down and brings them back when it scrolls up or reaches the top. Small reversals under the threshold and rubber-band overscroll are ignored. Pass the element that scrolls as <code>source</code>; the default is the window. Scroll the example.</p>
+      <p><code>scrollCompact</code> hides the labels while the page scrolls down and brings them back when it scrolls up or reaches the top. Small reversals under the threshold and rubber-band overscroll are ignored. Compacting only hides the labels: items behind More stay there, so the bar never reshuffles while you scroll. Pass the element that scrolls as <code>source</code>; the default is the window. Scroll the example.</p>
       <div data-demo="compact"></div>
     </section>
 
@@ -206,23 +221,24 @@
       <div class="dd-table"><table>
         <thead><tr><th>Option</th><th>Type</th><th>What it does</th></tr></thead>
         <tbody>
-          <tr><td><code>position</code></td><td><code>'top' | 'bottom' | 'left' | 'right'</code></td><td>Pins the bar to an edge. Leave it out to place it yourself.</td></tr>
+          <tr><td><code>position</code></td><td><code>NavbarPosition</code></td><td>Pins the bar to an edge. Leave it out to place it yourself.</td></tr>
           <tr><td><code>labels</code></td><td><code>boolean</code></td><td><code>false</code> shows icons only.</td></tr>
           <tr><td><code>equalWidth</code></td><td><code>boolean</code></td><td>Every tab as wide as the widest.</td></tr>
-          <tr><td><code>equalWidthOverflow</code></td><td><code>'natural' | 'truncate' | 'grow'</code></td><td>What equal widths do when they don't fit. Default <code>'natural'</code>.</td></tr>
+          <tr><td><code>equalWidthOverflow</code></td><td><code>EqualWidthOverflow</code></td><td>What equal widths do when they don't fit. Default <code>'natural'</code>.</td></tr>
           <tr><td><code>colors</code></td><td><code>NavbarColors</code></td><td><code>selected</code>, <code>unselected</code>, <code>selectedIcon</code>, <code>selectedLabel</code>, <code>unselectedIcon</code>, <code>unselectedLabel</code>.</td></tr>
           <tr><td><code>background</code></td><td><code>string</code></td><td>Any CSS background to tint the glass.</td></tr>
           <tr><td><code>transparency</code></td><td><code>number</code></td><td>0 (solid) to 100 (clear).</td></tr>
           <tr><td><code>reorderable</code></td><td><code>boolean</code></td><td>Allows reordering with the keyboard and, in reorder mode, by dragging.</td></tr>
           <tr><td><code>autoSelect</code></td><td><code>boolean</code></td><td><code>false</code> leaves <code>aria-current</code> to you.</td></tr>
           <tr><td><code>enabled</code></td><td><code>() =&gt; boolean</code></td><td>Return <code>false</code> to switch the glass off, for example in another theme.</td></tr>
-          <tr><td><code>layout</code></td><td><code>'row' | 'wrap' | 'rows'</code></td><td>One row (default), rows in one pill, or a pill per row.</td></tr>
+          <tr><td><code>layout</code></td><td><code>NavbarLayout</code></td><td>One row (default), rows in one pill, or a pill per row.</td></tr>
           <tr><td><code>maxRows</code></td><td><code>number</code></td><td>With <code>overflow</code>, the most rows before items move into More.</td></tr>
-          <tr><td><code>overflow</code></td><td><code>boolean | 'menu' | 'expand' | NavbarOverflowOptions</code></td><td>Moves items that don't fit into More. Options: <code>style</code>, <code>surface</code>, <code>label</code>, <code>icon</code>, <code>maxVisible</code>, <code>boundary</code>.</td></tr>
+          <tr><td><code>overflow</code></td><td><code>boolean | NavbarOverflowStyle | NavbarOverflowOptions</code></td><td>Moves items that don't fit into More. Options: <code>style</code>, <code>trigger</code>, <code>surface</code>, <code>label</code>, <code>icon</code>, <code>maxVisible</code>, <code>boundary</code>, <code>closeOnScroll</code>.</td></tr>
           <tr><td><code>compact</code></td><td><code>boolean</code></td><td>Start with icons only.</td></tr>
-          <tr><td><code>scrollCompact</code></td><td><code>boolean | { source, threshold }</code></td><td>Compact while scrolling down.</td></tr>
-          <tr><td><code>contrast</code></td><td><code>boolean | { regions, adaptiveTint }</code></td><td>Adapt the foreground and tint to the content behind the bar.</td></tr>
-          <tr><td><code>magnify</code></td><td><code>boolean | { scale, lift, range }</code></td><td>Dock-style magnification. Defaults: 1.4, 10px, 110px.</td></tr>
+          <tr><td><code>scrollCompact</code></td><td><code>boolean | ScrollCompactOptions</code></td><td>Compact while scrolling down.</td></tr>
+          <tr><td><code>contrast</code></td><td><code>boolean | ContrastOptions</code></td><td>Adapt the foreground and tint to the content behind the bar.</td></tr>
+          <tr><td><code>animations</code></td><td><code>boolean | NavbarAnimations</code></td><td>Opt-in motion: reflow glide, spring popovers, tap feedback and badge pop.</td></tr>
+          <tr><td><code>magnify</code></td><td><code>boolean | NavbarMagnifyOptions</code></td><td>Dock-style magnification. Defaults: 1.4, 10px, 110px.</td></tr>
           <tr><td><code>onSelect(item)</code></td><td>callback</td><td>A tab was picked.</td></tr>
           <tr><td><code>onAction(item)</code></td><td>callback</td><td>An action was picked.</td></tr>
           <tr><td><code>onReorder(order, section)</code></td><td>callback</td><td>Tabs were reordered.</td></tr>
@@ -255,8 +271,43 @@
           <tr><td><code>setContrast(options?)</code>, <code>setBackdrop(signal?)</code></td><td>Contrast settings, or what's behind the bar: <code>{ tone: 'dark', busy: true }</code>.</td></tr>
           <tr><td><code>showContextActions(nodes, { label })</code>, <code>hideContextActions()</code>, <code>contextActive</code></td><td>Swap in actions and restore the navigation.</td></tr>
           <tr><td><code>createPopover(item, content, options)</code></td><td>A popover anchored to an item.</td></tr>
+          <tr><td><code>setAnimations(options?)</code></td><td>Turns the opt-in animations on, changes them, or turns them off.</td></tr>
           <tr><td><code>setMagnify(options?)</code></td><td>Turns magnify on, changes it, or turns it off.</td></tr>
           <tr><td><code>destroy()</code></td><td>Removes everything the navbar added.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="types">
+      <h2>Types</h2>
+      <p>Everything below is exported for TypeScript, so your own code can use the same names as the navbar: <code>import type { NavbarLayout } from '@soheab-com/liquid-glass-navbar';</code></p>
+      <div class="dd-table"><table>
+        <thead><tr><th>Type</th><th>Values or shape</th></tr></thead>
+        <tbody>
+          <tr id="type-NavbarItem"><td><code>NavbarItem</code></td><td><code>HTMLButtonElement | HTMLAnchorElement</code></td></tr>
+          <tr id="type-NavbarPosition"><td><code>NavbarPosition</code></td><td><code>'top' | 'bottom' | 'left' | 'right'</code></td></tr>
+          <tr id="type-NavbarLayout"><td><code>NavbarLayout</code></td><td><code>'row' | 'wrap' | 'rows'</code></td></tr>
+          <tr id="type-EqualWidthOverflow"><td><code>EqualWidthOverflow</code></td><td><code>'natural' | 'truncate' | 'grow'</code></td></tr>
+          <tr id="type-NavbarOverflowStyle"><td><code>NavbarOverflowStyle</code></td><td><code>'menu' | 'expand'</code></td></tr>
+          <tr id="type-NavbarOverflowSurface"><td><code>NavbarOverflowSurface</code></td><td><code>'shared' | 'individual'</code></td></tr>
+          <tr id="type-NavbarOverflowTrigger"><td><code>NavbarOverflowTrigger</code></td><td><code>'more' | 'dots'</code></td></tr>
+          <tr id="type-NavbarOverflowOptions"><td><code>NavbarOverflowOptions</code></td><td><code>{ style, trigger, surface, label, icon, maxVisible, boundary, closeOnScroll }</code></td></tr>
+          <tr id="type-NavbarColors"><td><code>NavbarColors</code></td><td><code>{ selected, unselected, selectedIcon, selectedLabel, unselectedIcon, unselectedLabel }</code></td></tr>
+          <tr id="type-ItemVisibility"><td><code>ItemVisibility</code></td><td><code>{ icon, label }</code></td></tr>
+          <tr id="type-NavbarBadge"><td><code>NavbarBadge</code></td><td><code>{ count, max, label } | { dot: true, label } | { status, label }</code></td></tr>
+          <tr id="type-NavbarBadgeStatus"><td><code>NavbarBadgeStatus</code></td><td><code>'info' | 'success' | 'warning' | 'error'</code></td></tr>
+          <tr id="type-NavbarAnimations"><td><code>NavbarAnimations</code></td><td><code>{ reflow, popovers, tap, badges }</code></td></tr>
+          <tr id="type-Spring"><td><code>Spring</code>, <code>SpringOptions</code></td><td>What <code>createSpring(initial, onUpdate, { response, dampingRatio, precision, onRest })</code> takes and returns: <code>to()</code>, <code>set()</code>, <code>stop()</code>, <code>value</code>.</td></tr>
+          <tr id="type-NavbarMagnifyOptions"><td><code>NavbarMagnifyOptions</code></td><td><code>{ scale, lift, range }</code></td></tr>
+          <tr id="type-ScrollCompactOptions"><td><code>ScrollCompactOptions</code>, <code>ScrollSource</code></td><td><code>{ source, threshold }</code>; <code>Window | HTMLElement</code></td></tr>
+          <tr id="type-ContrastOptions"><td><code>ContrastOptions</code></td><td><code>{ regions, adaptiveTint }</code></td></tr>
+          <tr id="type-BackdropSignal"><td><code>BackdropSignal</code>, <code>BackdropTone</code></td><td><code>{ tone, busy }</code>; <code>'light' | 'dark'</code></td></tr>
+          <tr id="type-ContextActionsOptions"><td><code>ContextActionsOptions</code></td><td><code>{ label, placement, back, onBack, className, look }</code></td></tr>
+          <tr id="type-NavbarContextPlacement"><td><code>NavbarContextPlacement</code></td><td><code>'replace' | 'start' | 'end' | HTMLElement</code></td></tr>
+          <tr id="type-NavbarBackItem"><td><code>NavbarBackItem</code>, <code>NavbarContextLook</code></td><td><code>{ label, icon }</code>; <code>{ colors, background, transparency }</code></td></tr>
+          <tr id="type-AnchoredPopoverOptions"><td><code>AnchoredPopoverOptions</code>, <code>AnchoredPopover</code></td><td>Options and the object returned by <code>createAnchoredPopover()</code> and <code>createPopover()</code>.</td></tr>
+          <tr id="type-PopoverPlacement"><td><code>PopoverPlacement</code>, <code>PopoverCloseReason</code></td><td><code>'auto' | 'above' | 'below'</code>; <code>'escape' | 'outside' | 'scroll' | 'selection' | 'trigger' | 'api'</code></td></tr>
+          <tr id="type-LiquidGlassNavbarOptions"><td><code>LiquidGlassNavbarOptions</code>, <code>LiquidGlassNavbar</code></td><td>Everything <code>mountLiquidGlassNavbar()</code> takes, and the object it returns.</td></tr>
         </tbody>
       </table></div>
     </section>
@@ -305,7 +356,7 @@
         <li>Items are your own buttons and links, so they keep their roles, focus order and keyboard behavior. Labels become accessible names automatically.</li>
         <li>The current tab is <code>aria-current="page"</code>. More and popover triggers carry <code>aria-expanded</code> and <code>aria-controls</code>.</li>
         <li>Focus moves into a popover opened from the keyboard and returns to its trigger on Escape. Focus stays on items when they move between the bar and More.</li>
-        <li>Moving parts use springs, so interrupting them turns them around smoothly. With Reduce Motion they jump to the end, and magnify is off.</li>
+        <li>Moving parts use springs, so interrupting them turns them around smoothly. With Reduce Motion they jump to the end, and magnify and the opt-in animations are off.</li>
         <li>With Reduce Transparency the default glass becomes solid. An explicit <code>transparency</code> takes precedence.</li>
       </ul>
     </section>

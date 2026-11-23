@@ -1,13 +1,8 @@
-import { mountLiquidGlassNavbar } from '@soheab-com/liquid-glass-navbar';
+import { mountLiquidGlassNavbar, type NavbarContextPlacement } from '@soheab-com/liquid-glass-navbar';
 import type { Example } from '../example.js';
 
-interface Controls {
-  placement: 'replace' | 'start' | 'end' | 'section';
-  back: boolean;
-  ownLook: boolean;
-}
-
-export const run: Example<Controls> = ({ nav, stage, output, controls }) => {
+// 'section' stands for the bar's first section, which the example passes as the placement.
+export const run: Example<{ placement: Exclude<NavbarContextPlacement, HTMLElement> | 'section'; back: boolean; ownLook: boolean }> = ({ nav, stage, output, controls: { placement, back, ownLook } }) => {
   // #region
   const navbar = mountLiquidGlassNavbar(nav, {
     onAction(item) {
@@ -33,14 +28,14 @@ export const run: Example<Controls> = ({ nav, stage, output, controls }) => {
 
   function showActions(): void {
     const actions = [action('Share', 'share'), action('Move', 'move')];
-    if (!controls.back) actions.push(action('Done', 'done'));
+    if (!back) actions.push(action('Done', 'done'));
     navbar.showContextActions(actions, {
       label: `Actions for ${selected().length} files`,
       // 'section' replaces just the first section of the bar.
-      placement: controls.placement === 'section' ? nav.querySelector<HTMLElement>('[data-navbar-section]')! : controls.placement,
-      back: controls.back,
+      placement: placement === 'section' ? nav.querySelector<HTMLElement>('[data-navbar-section]')! : placement,
+      back,
       onBack: clearSelection,
-      ...(controls.ownLook ? { look: { colors: { selected: '#ffffff', unselected: '#ffffff' }, background: '#2763a6', transparency: 15 } } : {}),
+      ...(ownLook ? { look: { colors: { selected: '#ffffff', unselected: '#ffffff' }, background: '#2763a6', transparency: 15 } } : {}),
     });
   }
 

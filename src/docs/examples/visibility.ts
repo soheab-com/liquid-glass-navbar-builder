@@ -1,11 +1,11 @@
-import { mountLiquidGlassNavbar } from '@soheab-com/liquid-glass-navbar';
+import { mountLiquidGlassNavbar, type ItemVisibility } from '@soheab-com/liquid-glass-navbar';
 import type { Example } from '../example.js';
 
-export const run: Example<{ icon: boolean; label: boolean }> = ({ nav, controls }) => {
+export const run: Example<{ visibility: ItemVisibility }> = ({ nav, controls: { visibility } }) => {
   // #region
   const navbar = mountLiquidGlassNavbar(nav, {});
   const map = nav.querySelector<HTMLButtonElement>('[aria-label="Map"]')!;
-  navbar.setItemVisibility(map, { icon: controls.icon, label: controls.label });
+  navbar.setItemVisibility(map, visibility);
   // #endregion
   return navbar;
 };

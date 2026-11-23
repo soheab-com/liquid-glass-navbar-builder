@@ -1,3 +1,4 @@
+import { reducedMotion, spring } from './motion.js';
 import {
   mountLiquidGlassNavbar, type LiquidGlassNavbar, type LiquidGlassNavbarOptions, type NavbarItem,
 } from '@soheab-com/liquid-glass-navbar';
@@ -15,12 +16,12 @@ export interface Group {
 export const groups: readonly Group[] = [
   { id: 'start', label: 'Start', icon: 'M3 10 12 3l9 7v10h-6v-6H9v6H3z', sections: [['introduction', 'Introduction'], ['install', 'Install'], ['quick-start', 'Quick start']] },
   { id: 'basics', label: 'Basics', icon: 'M5 6h14M5 12h14M5 18h9', sections: [['structure', 'Structure'], ['links', 'Links'], ['position', 'Position'], ['icons-labels', 'Icons and labels'], ['equal-width', 'Equal width'], ['look', 'Colors and glass']] },
-  { id: 'interaction', label: 'Interaction', icon: 'M6 3l13 7-6 1.6L10.5 18z', sections: [['swiping', 'Swiping'], ['reordering', 'Reordering'], ['magnify', 'Magnify']] },
+  { id: 'interaction', label: 'Interaction', icon: 'M6 3l13 7-6 1.6L10.5 18z', sections: [['swiping', 'Swiping'], ['reordering', 'Reordering'], ['magnify', 'Magnify'], ['animations', 'Animations']] },
   { id: 'layout', label: 'Layout', icon: 'M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z', sections: [['rows', 'Rows'], ['more', 'More']] },
   { id: 'features', label: 'Features', icon: 'm12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z', sections: [['popovers', 'Popovers'], ['badges', 'Badges'], ['scroll-compact', 'Scroll compact'], ['context-actions', 'Context actions'], ['contrast', 'Contrast'], ['persistence', 'Saving the tab']] },
-  { id: 'reference', label: 'Reference', icon: 'M6 3h10a2 2 0 0 1 2 2v16l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2zm3 5h6m-6 4h6', sections: [['options', 'Options'], ['methods', 'Methods'], ['attributes', 'Attributes'], ['css', 'CSS variables'], ['accessibility', 'Accessibility'], ['browsers', 'Browsers']] },
+  { id: 'reference', label: 'Reference', icon: 'M6 3h10a2 2 0 0 1 2 2v16l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2zm3 5h6m-6 4h6', sections: [['options', 'Options'], ['methods', 'Methods'], ['types', 'Types'], ['attributes', 'Attributes'], ['css', 'CSS variables'], ['accessibility', 'Accessibility'], ['browsers', 'Browsers']] },
 ];
-const settingsIcon = 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm0-12v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1';
+const settingsIcon = 'M10.32 5.00L10.72 2.49L13.28 2.49L13.68 5.00L15.76 5.86L17.82 4.37L19.63 6.18L18.14 8.24L19.00 10.32L21.51 10.72L21.51 13.28L19.00 13.68L18.14 15.76L19.63 17.82L17.82 19.63L15.76 18.14L13.68 19.00L13.28 21.51L10.72 21.51L10.32 19.00L8.24 18.14L6.18 19.63L4.37 17.82L5.86 15.76L5.00 13.68L2.49 13.28L2.49 10.72L5.00 10.32L5.86 8.24L4.37 6.18L6.18 4.37L8.24 5.86Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z';
 
 export type Position = 'bottom' | 'top' | 'left' | 'right';
 
@@ -33,6 +34,8 @@ export interface SiteBarSettings {
   layout: 'row' | 'wrap' | 'rows';
   maxRows: number;
   overflow: 'off' | 'menu' | 'expand';
+  overflowTrigger: 'more' | 'dots';
+  keepMoreOpen: boolean;
   overflowSurface: 'shared' | 'individual';
   maxVisible: number;
   equalWidth: boolean;
@@ -54,6 +57,7 @@ export interface SiteBarSettings {
   contrast: boolean;
   adaptiveTint: boolean;
   swipe: boolean;
+  animations: boolean;
   reorderable: boolean;
   order: string[];
   hidden: Record<string, { icon?: boolean; label?: boolean }>;
@@ -62,11 +66,11 @@ export interface SiteBarSettings {
 
 export const defaultSettings = (): SiteBarSettings => ({
   position: 'bottom', labels: true, sectionBar: true, settingsItem: true, separateSettings: true,
-  layout: 'row', maxRows: 2, overflow: 'menu', overflowSurface: 'shared', maxVisible: 0,
+  layout: 'row', maxRows: 2, overflow: 'menu', overflowTrigger: 'more', keepMoreOpen: true, overflowSurface: 'shared', maxVisible: 0,
   equalWidth: false, equalOverflow: 'natural', transparency: null, background: 'theme', color: '#dce9f6', color2: '#e9dcf6',
   accent: null, unselected: null, selectedIcon: null, unselectedIcon: null,
   magnify: true, magnifyScale: 1.4, magnifyLift: 10, magnifyRange: 110,
-  scrollCompact: true, compactThreshold: 16, contrast: false, adaptiveTint: false, swipe: true,
+  scrollCompact: true, compactThreshold: 16, contrast: false, adaptiveTint: false, swipe: true, animations: true,
   reorderable: false, order: groups.map((group) => group.id), hidden: {}, offset: 16,
 });
 
@@ -138,6 +142,7 @@ function lookOptions(settings: SiteBarSettings): LiquidGlassNavbarOptions {
     ...(settings.contrast ? { contrast: { adaptiveTint: settings.adaptiveTint } } : {}),
     equalWidth: settings.equalWidth,
     equalWidthOverflow: settings.equalOverflow,
+    animations: settings.animations,
   };
 }
 
@@ -159,8 +164,11 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
   let mainNav: HTMLElement | undefined;
   let subNav: HTMLElement | undefined;
   let group = groups[0]!;
+  // Which way the section bar slides in when the group changes: 1 from the right, -1 from the left.
+  let slideFrom = 0;
   let section = '';
-  const sizeWatch = new ResizeObserver(() => placeSub());
+  const stopWatches: (() => void)[] = [];
+  const sizeWatch = new ResizeObserver(() => { placeMain(); placeSub(); measureRoom(); });
 
   const groupOf = (id: string): Group => groups.find((entry) => entry.sections.some(([sectionId]) => sectionId === id)) ?? groups[0]!;
   const ordered = (): Group[] => settings.order.map((id) => groups.find((entry) => entry.id === id)).filter((entry): entry is Group => entry !== undefined);
@@ -189,7 +197,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       labels: settings.labels,
       layout: settings.layout,
       ...(settings.overflow === 'off' ? {} : {
-        overflow: { style: settings.overflow, surface: settings.overflowSurface, ...(settings.maxVisible ? { maxVisible: settings.maxVisible } : {}) },
+        overflow: { style: settings.overflow, trigger: settings.overflowTrigger, surface: settings.overflowSurface, closeOnScroll: !settings.keepMoreOpen, ...(settings.maxVisible ? { maxVisible: settings.maxVisible } : {}) },
         ...(settings.layout !== 'row' ? { maxRows: settings.maxRows } : {}),
       }),
       ...(settings.scrollCompact ? { scrollCompact: { threshold: settings.compactThreshold } } : {}),
@@ -201,8 +209,15 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
         saveSettings(settings);
       },
     });
-    mainNav.style.setProperty('--lg-nav-offset', `${settings.offset}px`);
+    placeMain();
     sizeWatch.observe(mainNav);
+    // While the main bar's More is open, the section bar steps out of the way, so the two never overlap.
+    const moreWatch = new MutationObserver(() => {
+      const open = mainNav?.querySelector('.lg-navbar__more')?.getAttribute('aria-expanded') === 'true';
+      subNav?.classList.toggle('dd-site-bar--away', open);
+    });
+    moreWatch.observe(mainNav, { subtree: true, attributes: true, attributeFilter: ['aria-expanded'] });
+    stopWatches.push(() => moreWatch.disconnect());
   }
 
   function buildSub(): void {
@@ -220,7 +235,40 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       overflow: true,
     });
     placeSub();
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) subNav.animate({ opacity: [0, 1] }, { duration: 140, easing: 'ease-out' });
+    // Its size settles after layout; measure the room again when it does.
+    sizeWatch.observe(subNav);
+    // Slide in from the side the reader is heading (later groups from the right).
+    if (settings.animations && slideFrom) {
+      const nav = subNav;
+      spring(1, 0, (value) => {
+        nav.style.transform = `translateX(${(slideFrom * 28 * value).toFixed(2)}px)`;
+        nav.style.opacity = String(1 - Math.min(1, Math.max(0, value)));
+      }, () => { nav.style.removeProperty('transform'); nav.style.removeProperty('opacity'); });
+    } else if (!reducedMotion()) {
+      subNav.animate({ opacity: [0, 1] }, { duration: 140, easing: 'ease-out' });
+    }
+    slideFrom = 0;
+  }
+
+  // At the top, the bars go below the docs header, which stays pinned there; elsewhere they sit on the edge.
+  function placeMain(): void {
+    if (!mainNav) return;
+    const header = document.querySelector('.dd-top')?.getBoundingClientRect();
+    const below = settings.position === 'top' && header ? Math.max(0, header.bottom) : 0;
+    if (below) mainNav.style.setProperty('top', `${Math.round(below + settings.offset)}px`);
+    else mainNav.style.removeProperty('top');
+    mainNav.style.setProperty('--lg-nav-offset', `${settings.offset}px`);
+  }
+
+  // The room the bars take at the top of the page, so the content starts below them.
+  function measureRoom(): void {
+    if (settings.position !== 'top' || !mainNav) {
+      document.documentElement.style.removeProperty('--dd-top-room');
+      return;
+    }
+    const bottom = Math.max(mainNav.getBoundingClientRect().bottom, subNav?.getBoundingClientRect().bottom ?? 0);
+    const header = document.querySelector('.dd-top')?.getBoundingClientRect().bottom ?? 0;
+    document.documentElement.style.setProperty('--dd-top-room', `${Math.round(bottom - header)}px`);
   }
 
   // The section bar sits on the same edge, just beyond the main bar. Only its edge distance moves out; its
@@ -234,6 +282,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     subNav.style.setProperty(edge, `${Math.round(distance + 10)}px`);
     subNav.style.setProperty('--lg-nav-offset', `${settings.offset}px`);
     sub?.sync();
+    measureRoom();
   }
 
   function jump(item: NavbarItem): void {
@@ -248,10 +297,12 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     document.documentElement.dataset.siteBar = settings.position;
     buildMain();
     buildSub();
+    measureRoom();
   }
 
   function teardown(): void {
     sizeWatch.disconnect();
+    stopWatches.splice(0).forEach((stop) => stop());
     main?.destroy();
     sub?.destroy();
     mainNav?.remove();
@@ -267,14 +318,28 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       section = id;
       const next = groupOf(id);
       if (next !== group) {
+        const previous = groups.indexOf(group);
         group = next;
         const item = mainNav?.querySelector<HTMLAnchorElement>(`[data-group="${group.id}"]`)
           ?? main?.overflowItems.find((entry) => entry.dataset.group === group.id);
         if (item) main?.select(item);
-        sub?.destroy();
-        subNav?.remove();
+        const leaving = subNav;
+        const leavingBar = sub;
+        slideFrom = groups.indexOf(next) > previous ? 1 : -1;
         sub = undefined;
         subNav = undefined;
+        // The old sections move out the other way while the new ones come in.
+        if (leaving && settings.animations && !reducedMotion()) {
+          leaving.style.pointerEvents = 'none';
+          const away = -slideFrom;
+          spring(0, 1, (value) => {
+            leaving.style.transform = `translateX(${(away * 28 * value).toFixed(2)}px)`;
+            leaving.style.opacity = String(1 - Math.min(1, Math.max(0, value)));
+          }, () => { leavingBar?.destroy(); leaving.remove(); }, { response: .3, dampingRatio: 1 });
+        } else {
+          leavingBar?.destroy();
+          leaving?.remove();
+        }
         buildSub();
       } else if (subNav && sub) {
         const item = [...subNav.querySelectorAll<HTMLAnchorElement>('a'), ...sub.overflowItems].find((entry) => entry.getAttribute('href') === `#${id}`);
