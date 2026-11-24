@@ -1,5 +1,5 @@
 import * as esbuild from 'esbuild';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 // `OUT=some/dir node build.mjs` builds a preview there and leaves the live dist/ alone.
@@ -50,6 +50,8 @@ for (const page of pages) {
     .replace('{{APP_CSS}}', path.relative(from, info.cssBundle));
   await writeFile(target, html);
 }
+
+await copyFile('src/docs/llms.txt', path.join(out, 'docs/llms.txt'));
 
 if (!preview) {
   // Swap the finished build in so the live site never serves a partial one.

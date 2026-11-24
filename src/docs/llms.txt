@@ -1,0 +1,20 @@
+# Liquid Glass Navbar
+
+> A framework-independent glass tab bar for web apps. It adds a sliding highlight, swipe selection, and glass styling to your own navigation markup.
+
+Install the package from a GitHub tag. A bundler is required because the package exports TypeScript and CSS. Import `mountLiquidGlassNavbar` from `@soheab-com/liquid-glass-navbar` and import `@soheab-com/liquid-glass-navbar/navbar.css` separately. The application owns the markup and page content. The navbar manages selection. Use `onSelect` for button-driven content changes or link tabs for page navigation.
+
+## Integration
+
+- [README](https://raw.githubusercontent.com/soheab-com/liquid-glass-navbar/main/README.md) — GitHub installation, markup, and quick start.
+- [Quick start](https://soheab.com/navbar-builder/docs/#quick-start) — nav markup and live example.
+- [Options](https://soheab.com/navbar-builder/docs/#options) — configure the navbar when mounting.
+- [Methods](https://soheab.com/navbar-builder/docs/#methods) — update selection, layout, overflow, badges, and more after mounting.
+- [HTML attributes](https://soheab.com/navbar-builder/docs/#attributes) — mark icons, labels, sections, and actions.
+- [CSS variables](https://soheab.com/navbar-builder/docs/#css) — customize appearance.
+
+## Source and examples
+
+- [Public TypeScript API](https://raw.githubusercontent.com/soheab-com/liquid-glass-navbar/v0.10.0/src/index.ts) — see `LiquidGlassNavbarOptions` and `LiquidGlassNavbar`. Use the source tag matching your installed version.
+- [Feature examples](https://raw.githubusercontent.com/soheab-com/liquid-glass-navbar/v0.10.0/examples/features.ts) — real examples for configuring the library.
+- [Changelog](https://raw.githubusercontent.com/soheab-com/liquid-glass-navbar/main/CHANGELOG.md) — changes by release.
