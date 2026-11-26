@@ -682,7 +682,7 @@ addEventListener('hashchange', stopHoverScroll);
 
 // During a topic jump, keep the bars on its destination as the page passes other sections.
 let jumping: { target: HTMLElement; until: number } | undefined;
-const siteBar = mountSiteBar('', 'docs', loadSettings(), (id, reason) => {
+const siteBar = mountSiteBar('', 'docs', loadSettings(), (id, reason, touch) => {
   const target = document.getElementById(id);
   if (!target) return;
   if (reason === 'activate') {
@@ -698,7 +698,8 @@ const siteBar = mountSiteBar('', 'docs', loadSettings(), (id, reason) => {
   const top = Math.min(root.scrollHeight - root.clientHeight, Math.max(0, scrollY + target.getBoundingClientRect().top - inset));
   hoverLanding = { top, section: id };
   siteBar.show(id);
-  target.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'instant' : 'smooth' });
+  if (touch) scrollTo({ top, behavior: 'instant' });
+  else target.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'instant' : 'smooth' });
 }, () => {
   if (!hoverOrigin) return;
   hoverLanding = hoverOrigin;

@@ -169,7 +169,7 @@ export interface SiteBar {
  * `onJump` is called when a bar item leads to a section on this page.
  * The secondary bar reports mouse hover separately from link activation.
  */
-export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: SiteBarSettings, onJump?: (id: string, reason: 'activate' | 'preview' | 'keep') => void, onHoverEnd?: () => void): SiteBar {
+export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: SiteBarSettings, onJump?: (id: string, reason: 'activate' | 'preview' | 'keep', touch?: boolean) => void, onHoverEnd?: () => void): SiteBar {
   let settings = initial;
   let main: LiquidGlassNavbar | undefined;
   let sub: LiquidGlassNavbar | undefined;
@@ -238,7 +238,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
 
   function bindHover(topicNav: HTMLElement, current: () => boolean): void {
     let hovered: HTMLAnchorElement | undefined;
-    let touch: { id: number; x: number; y: number } | undefined;
+    let finger: { id: number; x: number; y: number } | undefined;
     let clientX = 0, clientY = 0;
     let hoverTimer: ReturnType<typeof setTimeout> | undefined;
     let leaveTimer: ReturnType<typeof setTimeout> | undefined;
@@ -252,46 +252,57 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       const revision = hoverRevision;
       leaveTimer = setTimeout(() => { if (current() && revision === hoverRevision) onHoverEnd?.(); }, 110);
     };
-    const trackHover = (event: PointerEvent) => {
+    const track = (x: number, y: number, touch = false) => {
       if (!current()) return;
-      const dragging = event.pointerType === 'touch' || event.buttons !== 0;
-      if (dragging && (!touch || touch.id !== event.pointerId
-        || Math.hypot(event.clientX - touch.x, event.clientY - touch.y) < 8)) return;
-      const hit = dragging ? document.elementFromPoint(event.clientX, event.clientY) : event.target;
-      const link = hit instanceof Element ? hit.closest<HTMLAnchorElement>('a[href^="#"]') : null;
+      const link = document.elementFromPoint(x, y)?.closest<HTMLAnchorElement>('a[href^="#"]');
       const mode = link ? settings.topicHover[link.hash.slice(1)] ?? settings.defaultTopicHover : 'off';
       if (!link || !topicNav.contains(link) || mode === 'off') {
         endHover();
         return;
       }
-      ({ clientX, clientY } = event);
+      clientX = x;
+      clientY = y;
       if (link === hovered) return;
       clearHover();
       hovered = link;
       hoverRevision++;
-      hoverTimer = setTimeout(() => {
+      if (touch) jump(link, mode, true);
+      else hoverTimer = setTimeout(() => {
         if (current() && document.elementFromPoint(clientX, clientY)?.closest('a') === link) jump(link, mode);
         else if (current()) onHoverEnd?.();
       }, 90);
     };
+    const trackHover = (event: PointerEvent) => {
+      if (event.pointerType !== 'touch' && !event.buttons) track(event.clientX, event.clientY);
+    };
     topicNav.addEventListener('pointerover', trackHover);
     topicNav.addEventListener('pointermove', trackHover);
     topicNav.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') endHover(); });
-    topicNav.addEventListener('pointerdown', (event) => {
-      clearHover();
-      if (settings.swipe && event.isPrimary && event.button === 0 && event.target instanceof Element
-        && event.target.closest('a[href^="#"]')) {
-        touch = { id: event.pointerId, x: event.clientX, y: event.clientY };
-      }
-    });
-    const finishPointer = (event: PointerEvent) => {
-      if (touch?.id !== event.pointerId) return;
-      touch = undefined;
+    topicNav.addEventListener('pointerdown', clearHover);
+    topicNav.addEventListener('touchstart', (event) => {
+      if (!settings.swipe || event.touches.length !== 1 || !(event.target instanceof Element)
+        || !event.target.closest('a[href^="#"]')) return;
+      const touch = event.touches[0]!;
+      finger = { id: touch.identifier, x: touch.clientX, y: touch.clientY };
+    }, { passive: true });
+    topicNav.addEventListener('touchmove', (event) => {
+      const start = finger;
+      if (!start || event.touches.length !== 1) return;
+      const touch = event.touches[0]!;
+      const dx = Math.abs(touch.clientX - start.x);
+      const dy = Math.abs(touch.clientY - start.y);
+      const vertical = settings.position === 'left' || settings.position === 'right';
+      if (touch.identifier !== start.id || (vertical ? dy < Math.max(8, dx) : dx < Math.max(8, dy))) return;
+      if (event.cancelable) event.preventDefault();
+      track(touch.clientX, touch.clientY, true);
+    }, { passive: false });
+    const finishTouch = () => {
+      if (!finger) return;
+      finger = undefined;
       endHover();
     };
-    topicNav.addEventListener('pointerup', finishPointer);
-    topicNav.addEventListener('pointercancel', finishPointer);
-    topicNav.addEventListener('lostpointercapture', finishPointer);
+    topicNav.addEventListener('touchend', finishTouch);
+    topicNav.addEventListener('touchcancel', finishTouch);
     topicNav.addEventListener('wheel', clearHover, { passive: true });
   }
 
@@ -362,11 +373,11 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     measureRoom();
   }
 
-  function jump(item: NavbarItem, reason: 'activate' | 'preview' | 'keep' = 'activate'): void {
+  function jump(item: NavbarItem, reason: 'activate' | 'preview' | 'keep' = 'activate', touch = false): void {
     if (!(item instanceof HTMLAnchorElement)) return;
     const url = new URL(item.href);
     if (url.pathname !== location.pathname || !url.hash) return;
-    onJump?.(url.hash.slice(1), reason);
+    onJump?.(url.hash.slice(1), reason, touch);
   }
 
   function build(): void {
