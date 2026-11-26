@@ -31,6 +31,7 @@ export interface SiteBarSettings {
   labels: boolean;
   sectionBar: boolean;
   defaultTopicHover: TopicHoverMode;
+  topicHoverDelay: number;
   topicHover: Partial<Record<string, TopicHoverMode>>;
   settingsItem: boolean;
   separateSettings: boolean;
@@ -68,7 +69,7 @@ export interface SiteBarSettings {
 }
 
 export const defaultSettings = (): SiteBarSettings => ({
-  position: 'bottom', labels: true, sectionBar: true, defaultTopicHover: 'preview', topicHover: {}, settingsItem: true, separateSettings: true,
+  position: 'bottom', labels: true, sectionBar: true, defaultTopicHover: 'preview', topicHoverDelay: 2, topicHover: {}, settingsItem: true, separateSettings: true,
   layout: 'row', maxRows: 2, overflow: 'menu', overflowTrigger: 'more', keepMoreOpen: true, overflowSurface: 'shared', maxVisible: 0,
   equalWidth: false, equalOverflow: 'natural', transparency: null, background: 'theme', color: '#dce9f6', color2: '#e9dcf6',
   accent: null, unselected: null, selectedIcon: null, unselectedIcon: null,
@@ -93,6 +94,8 @@ export function loadSettings(): SiteBarSettings {
         merged.order = [...new Set([...ids, ...base.order])];
       } else if (key === 'defaultTopicHover') {
         if (value === 'off' || value === 'preview' || value === 'keep') merged.defaultTopicHover = value;
+      } else if (key === 'topicHoverDelay') {
+        if (typeof value === 'number' && Number.isFinite(value)) merged.topicHoverDelay = Math.min(5, Math.max(0, value));
       } else if (key === 'topicHover') {
         const entries = typeof value === 'object' && value !== null ? value as Record<string, unknown> : {};
         merged.topicHover = Object.fromEntries(groups.flatMap((group) => group.sections)
@@ -224,7 +227,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       },
     });
     const groupNav = mainNav;
-    if (page === 'docs') bindHover(groupNav, () => mainNav === groupNav);
+    if (page === 'docs') bindHover(groupNav, () => mainNav === groupNav, settings.topicHoverDelay * 1000);
     placeMain();
     sizeWatch.observe(mainNav);
     // While the main bar's More is open, the section bar steps out of the way, so the two never overlap.
@@ -236,7 +239,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     stopWatches.push(() => moreWatch.disconnect());
   }
 
-  function bindHover(topicNav: HTMLElement, current: () => boolean): void {
+  function bindHover(topicNav: HTMLElement, current: () => boolean, delay = 0): void {
     let hovered: HTMLAnchorElement | undefined;
     let finger: { id: number; x: number; y: number } | undefined;
     let clientX = 0, clientY = 0;
@@ -266,11 +269,12 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       clearHover();
       hovered = link;
       hoverRevision++;
-      if (touch) jump(link, mode, true);
-      else hoverTimer = setTimeout(() => {
-        if (current() && document.elementFromPoint(clientX, clientY)?.closest('a') === link) jump(link, mode);
+      const preview = () => {
+        if (current() && document.elementFromPoint(clientX, clientY)?.closest('a') === link) jump(link, mode, touch);
         else if (current()) onHoverEnd?.();
-      }, 90);
+      };
+      if (delay === 0) preview();
+      else hoverTimer = setTimeout(preview, delay);
     };
     const trackHover = (event: PointerEvent) => {
       if (event.pointerType !== 'touch' && !event.buttons) track(event.clientX, event.clientY);
@@ -321,7 +325,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       overflow: true,
     });
     const topicNav = subNav;
-    bindHover(topicNav, () => subNav === topicNav);
+    bindHover(topicNav, () => subNav === topicNav, settings.topicHoverDelay * 1000);
     placeSub();
     // Its size settles after layout; measure the room again when it does.
     sizeWatch.observe(subNav);
