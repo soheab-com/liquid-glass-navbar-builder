@@ -53,6 +53,7 @@ for (const page of pages) {
   await writeFile(target, html);
 }
 
+await copyFile('src/docs/theme-bootstrap.js', path.join(out, 'docs/theme-bootstrap.js'));
 await copyFile('src/docs/llms.txt', path.join(out, 'docs/llms.txt'));
 
 if (!preview) {

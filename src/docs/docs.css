@@ -520,3 +520,6 @@ pre {
 .dd-release-notes { padding: 0 1rem .8rem; }
 .dd-release-notes h3 { margin: .45rem 0 .2rem; font-size: 1rem; }
 .dd-release-notes ul { margin-block: .2rem .65rem; }
+
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }

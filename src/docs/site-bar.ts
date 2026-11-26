@@ -179,6 +179,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
   // Which way the section bar slides in when the group changes: 1 from the right, -1 from the left.
   let slideFrom = 0;
   let section = '';
+  let hoverRevision = 0;
   const stopWatches: (() => void)[] = [];
   const sizeWatch = new ResizeObserver(() => { placeMain(); placeSub(); measureRoom(); });
 
@@ -222,6 +223,8 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
         saveSettings(settings);
       },
     });
+    const groupNav = mainNav;
+    if (page === 'docs') bindHover(groupNav, () => mainNav === groupNav);
     placeMain();
     sizeWatch.observe(mainNav);
     // While the main bar's More is open, the section bar steps out of the way, so the two never overlap.
@@ -231,6 +234,46 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     });
     moreWatch.observe(mainNav, { subtree: true, attributes: true, attributeFilter: ['aria-expanded'] });
     stopWatches.push(() => moreWatch.disconnect());
+  }
+
+  function bindHover(topicNav: HTMLElement, current: () => boolean): void {
+    let hovered: HTMLAnchorElement | undefined;
+    let clientX = 0, clientY = 0;
+    let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+    let leaveTimer: ReturnType<typeof setTimeout> | undefined;
+    const clearHover = () => {
+      clearTimeout(hoverTimer);
+      clearTimeout(leaveTimer);
+      hovered = undefined;
+    };
+    const endHover = () => {
+      clearHover();
+      const revision = hoverRevision;
+      leaveTimer = setTimeout(() => { if (current() && revision === hoverRevision) onHoverEnd?.(); }, 110);
+    };
+    const trackHover = (event: PointerEvent) => {
+      if (event.pointerType === 'touch' || event.buttons || !current()) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#"]') : null;
+      const mode = link ? settings.topicHover[link.hash.slice(1)] ?? settings.defaultTopicHover : 'off';
+      if (!link || !topicNav.contains(link) || mode === 'off') {
+        endHover();
+        return;
+      }
+      ({ clientX, clientY } = event);
+      if (link === hovered) return;
+      clearHover();
+      hovered = link;
+      hoverRevision++;
+      hoverTimer = setTimeout(() => {
+        if (current() && document.elementFromPoint(clientX, clientY)?.closest('a') === link) jump(link, mode);
+        else if (current()) onHoverEnd?.();
+      }, 90);
+    };
+    topicNav.addEventListener('pointerover', trackHover);
+    topicNav.addEventListener('pointermove', trackHover);
+    topicNav.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') endHover(); });
+    topicNav.addEventListener('pointerdown', clearHover);
+    topicNav.addEventListener('wheel', clearHover, { passive: true });
   }
 
   function buildSub(): void {
@@ -248,36 +291,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       overflow: true,
     });
     const topicNav = subNav;
-    let hovered: HTMLAnchorElement | undefined;
-    let hoverTimer: ReturnType<typeof setTimeout> | undefined;
-    let leaveTimer: ReturnType<typeof setTimeout> | undefined;
-    const clearHover = () => {
-      clearTimeout(hoverTimer);
-      clearTimeout(leaveTimer);
-      hovered = undefined;
-    };
-    const endHover = () => {
-      clearHover();
-      leaveTimer = setTimeout(() => { if (subNav === topicNav) onHoverEnd?.(); }, 75);
-    };
-    topicNav.addEventListener('pointermove', (event) => {
-      if (event.pointerType !== 'mouse' || event.buttons || topicNav !== subNav) return;
-      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#"]') : null;
-      const mode = link ? settings.topicHover[link.hash.slice(1)] ?? settings.defaultTopicHover : 'off';
-      if (!link || !topicNav.contains(link) || mode === 'off') {
-        endHover();
-        return;
-      }
-      if (link === hovered) return;
-      clearHover();
-      hovered = link;
-      hoverTimer = setTimeout(() => {
-        if (subNav === topicNav && link.isConnected && link.matches(':hover')) jump(link, mode);
-      }, 90);
-    });
-    topicNav.addEventListener('pointerleave', (event) => { if (event.pointerType === 'mouse') endHover(); });
-    topicNav.addEventListener('pointerdown', clearHover);
-    topicNav.addEventListener('wheel', clearHover, { passive: true });
+    bindHover(topicNav, () => subNav === topicNav);
     placeSub();
     // Its size settles after layout; measure the room again when it does.
     sizeWatch.observe(subNav);
