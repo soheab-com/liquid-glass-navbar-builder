@@ -50,6 +50,17 @@ import swipeSource from './examples/swipe.ts?raw';
 import * as visibility from './examples/visibility.js';
 import visibilitySource from './examples/visibility.ts?raw';
 
+const releaseBadge = document.querySelector<HTMLElement>('[data-release-published]');
+if (releaseBadge) {
+  const published = Date.parse(releaseBadge.dataset.releasePublished ?? '');
+  const expires = published + 7 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  if (now >= published && now < expires) {
+    releaseBadge.hidden = false;
+    setTimeout(() => { releaseBadge.hidden = true; }, expires - now);
+  }
+}
+
 highlight.registerLanguage('html', xml);
 highlight.registerLanguage('ts', typescript);
 
