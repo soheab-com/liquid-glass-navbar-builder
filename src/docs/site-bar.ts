@@ -213,6 +213,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       }),
       ...(settings.scrollCompact ? { scrollCompact: { threshold: settings.compactThreshold } } : {}),
       reorderable: settings.reorderable,
+      ...barGroup(),
       onSelect: (item) => jump(item),
       onReorder: (order) => {
         const ids = order.map((item) => item.dataset.group).filter((id): id is string => Boolean(id) && id !== 'settings');
@@ -358,6 +359,13 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     topicNav.addEventListener('wheel', clearHover, { passive: true });
   }
 
+  // The two docs bars share a hover group so a held swipe that crosses from one to the other shows in the bar
+  // under the finger. Scrolling previews stay with bindHover, so the package's own preview is a no-op.
+  function barGroup(): Pick<LiquidGlassNavbarOptions, 'hoverNavigation'> {
+    if (page !== 'docs' || !settings.swipe) return {};
+    return { hoverNavigation: { group: 'docs-bars', onPreview: () => {}, onPreviewEnd: () => {} } };
+  }
+
   function buildSub(): void {
     if (!settings.sectionBar || page !== 'docs') return;
     subNav = document.createElement('nav');
@@ -368,7 +376,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     document.body.append(subNav);
     // Two rows before More: a group with many sections shows them all on a phone.
     sub = mountLiquidGlassNavbar(subNav, {
-      ...lookOptions(settings), refractionSources: false, onSelect: (item) => jump(item),
+      ...lookOptions(settings), refractionSources: false, ...barGroup(), onSelect: (item) => jump(item),
       ...(settings.position === 'top' || settings.position === 'bottom' ? { layout: 'wrap' as const, maxRows: 2 } : {}),
       overflow: true,
     });
