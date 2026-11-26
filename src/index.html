@@ -79,11 +79,20 @@
           <label class="nb-check"><input type="checkbox" id="equal-width"> Equal width tabs</label>
           <label class="nb-field nb-sub" id="equal-overflow-row">When it doesn't fit <select id="equal-overflow"><option value="natural">Use natural widths</option><option value="truncate">Cut off labels</option><option value="grow">Make the bar wider</option></select></label>
           <label class="nb-check"><input type="checkbox" id="sectioned"> Separate sections</label>
+          <label class="nb-check"><input type="checkbox" id="section-equal"> Equal width within sections</label>
+          <label class="nb-field">Items per section <input id="section-max-visible" type="number" min="1" max="16" placeholder="Auto"></label>
           <label class="nb-check"><input type="checkbox" id="reorderable"> Reorderable</label>
           <label class="nb-check nb-sub" id="reorder-mode-row" hidden><input type="checkbox" id="reorder-mode"> Drag to reorder in preview</label>
           <label class="nb-field" id="layout-row">Rows <select id="layout"><option value="row">One row</option><option value="wrap">Wrap in one pill</option><option value="rows">A pill per row</option></select></label>
+          <div id="collapse-controls" hidden>
+            <label class="nb-check"><input type="checkbox" id="collapsible"> Collapsible rows</label>
+            <label class="nb-check"><input type="checkbox" id="start-collapsed"> Start collapsed</label>
+          </div>
           <label class="nb-field">More button <select id="overflow"><option value="none">Off</option><option value="menu">Menu</option><option value="expand">Row of icons</option></select></label>
           <label class="nb-field nb-sub" id="overflow-trigger-row">More button <select id="overflow-trigger"><option value="more">Icon and label</option><option value="dots">Dots only (⋮)</option></select></label>
+          <label class="nb-check"><input type="checkbox" id="more-label"> Show More label</label>
+          <label class="nb-check"><input type="checkbox" id="close-overflow-scroll"> Close More on scroll</label>
+          <label class="nb-field">Items before More at 900 px <input id="desktop-max-visible" type="number" min="1" max="16" placeholder="Auto"></label>
           <label class="nb-field nb-sub" id="expand-surface-row">Icons <select id="expand-surface"><option value="shared">In one pill</option><option value="individual">Separate glass</option></select></label>
           <label class="nb-field nb-sub" id="max-rows-row">Rows before More <select id="max-rows"><option value="">No limit</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
           <label class="nb-field nb-sub" id="max-visible-row">Tabs before More <select id="max-visible"><option value="">As many as fit</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></label>
@@ -106,9 +115,24 @@
         </div>
       </details>
       <details>
+        <summary>Lens</summary>
+        <div class="nb-options">
+          <label class="nb-field">Style <select id="lens-style"><option value="glass">Glass</option><option value="tinted">Tinted</option><option value="outline">Outline</option></select></label>
+          <label class="nb-check"><input type="checkbox" id="lens-accent-auto"> Follow the selected icon color</label>
+          <label class="nb-field">Lens accent <input type="color" id="lens-accent"></label>
+          <label class="nb-check"><input type="checkbox" id="lens-background-auto"> Use the style’s lens fill</label>
+          <label class="nb-field">Lens fill <input type="color" id="lens-background"></label>
+          <label class="nb-field">Lens radius (px) <input id="lens-radius" type="number" min="0" max="999" placeholder="Auto"></label>
+          <label class="nb-field">Drag blur (px) <input id="lens-blur" type="number" min="0" max="12" step=".5"></label>
+          <label class="nb-field">Press scale <input id="lens-press-scale" type="number" min=".5" max="2" step=".01" placeholder="Auto"></label>
+          <label class="nb-field">Drag scale <input id="lens-drag-scale" type="number" min=".5" max="2" step=".01" placeholder="Auto"></label>
+        </div>
+      </details>
+      <details>
         <summary>Behavior</summary>
         <div class="nb-options">
           <label>Hover navigation <select id="hover-navigation"><option value="off">Off</option><option value="preview">Preview and return</option><option value="keep">Scroll and keep</option></select></label>
+          <label class="nb-check" id="hover-group-row" hidden><input type="checkbox" id="hover-group"> Preview a second swipe-linked bar</label>
           <label id="hover-delay-row" hidden>Preview delay (ms) <input id="hover-delay" type="number" min="0" max="5000" step="100"></label>
           <label class="nb-check"><input type="checkbox" id="magnify"> Magnify icons under the pointer</label>
           <label class="nb-check"><input type="checkbox" id="animations"> Smooth animations</label>

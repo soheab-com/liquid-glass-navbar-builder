@@ -62,6 +62,7 @@
         <li><a href="#css">CSS variables</a></li>
         <li><a href="#accessibility">Accessibility and motion</a></li>
         <li><a href="#browsers">Browser support</a></li>
+        <li><a href="#complete-api">Complete package reference</a></li>
         <li><a href="#changelog">Changelog</a></li>
       </ol>
       </div>
@@ -70,8 +71,8 @@
   <main class="dd-main">
     <section id="introduction">
       <h1>Liquid Glass Navbar</h1>
-      <p class="dd-release"><a href="#release-v0.12.0">v0.12.0</a>
-        <span class="dd-release-badge" data-release-published="2026-11-26T10:33:15Z" hidden>New</span>
+      <p class="dd-release"><a href="#release-v{{NAVBAR_VERSION}}">v{{NAVBAR_VERSION}}</a>
+        <span class="dd-release-badge" data-release-published="{{NAVBAR_PUBLISHED}}" hidden>New</span>
       </p>
       <p class="dd-lede">A glass tab bar for the web, in the style of iOS. You write the buttons; it adds the glass, the sliding highlight and the swipe gesture. It's plain TypeScript and CSS, so it works with any framework or none.</p>
       <div data-demo="hero"></div>
@@ -81,7 +82,7 @@
     <section id="install">
       <h2>Install</h2>
       <p>The package is installed from GitHub, not npm. Pin a tag:</p>
-      <pre data-lang="ts"><code>npm install 'git+https://github.com/soheab-com/liquid-glass-navbar.git#v0.12.0'</code></pre>
+      <pre data-lang="ts"><code>npm install 'git+https://github.com/soheab-com/liquid-glass-navbar.git#v{{NAVBAR_VERSION}}'</code></pre>
       <p>It ships TypeScript and CSS, so use a bundler such as Vite, esbuild or webpack.</p>
     </section>
 
@@ -130,6 +131,7 @@
     <section id="look">
       <h2>Colors and glass</h2>
       <p><code>colors</code> sets the selected and unselected colors, and optionally separate icon and label colors. <code>background</code> takes any CSS background to tint the glass. <code>transparency</code> runs from 0 (solid) to 100 (clear glass with only the rim, shadow and refraction).</p>
+      <p>Set <code>lens</code> at mount or use <code>setLens()</code> to change its glass, tinted, or outline style. Set a separate accent, background, radius, drag blur, <code>pressScale</code>, or <code>dragScale</code>. Call <code>refreshColors()</code> if the theme changes while the lens is moving.</p>
       <div data-demo="look"></div>
       <p>In Chromium the rim refracts the live page behind it. Safari and Firefox use live blur and tint. The same settings are available as CSS variables; see <a href="#css">CSS variables</a>.</p>
     </section>
@@ -174,9 +176,11 @@
 
     <section id="rows">
       <h2>Rows</h2>
+      <p>Add <code>data-navbar-equal</code> for equal widths within a section, or <code>data-navbar-max-visible="3"</code> to give it its own More limit. Use <code>setCollapsed()</code> to change the row state, <code>collapsed</code> to read it, and <code>onResize({ width, height })</code> to reserve page space as the bar animates.</p>
+      <p>Use <code>setItemHidden(item, hidden)</code> to hide or restore a complete item. <code>update(replacementNav)</code> reconciles the next items and sections in place. Stable <code>data-navbar-key</code> values preserve item identity across updates.</p>
       <p><code>layout: 'wrap'</code> wraps the items into rows inside one glass surface. <code>layout: 'rows'</code> gives each row its own centered pill. The bar measures the real icons, labels, padding and gaps, so every item fits, and it reflows when the space changes. Drag the width slider.</p>
       <p>Put an item or section on a specific row with <code>data-navbar-row="1"</code>, <code>"2"</code> and so on. In a bar with sections, each row holds whole sections. Multi-row layouts apply to bars at the top or bottom, or bars you place yourself.</p>
-      <p>Use <code>collapsible: true</code> to put a chevron in the last row. Tap it to open or close the upper rows, or swipe the lens over it to preview the change. Configure which rows collapse and save the choice with <code>onCollapse</code>. The <a href="https://github.com/soheab-com/liquid-glass-navbar/blob/v0.12.0/README.md#multi-row-navigation">multi-row integration guide</a> also covers responsive More limits, item updates, and lens appearance.</p>
+      <p>Use <code>collapsible: true</code> to put a chevron in the last row. Tap it to open or close the upper rows, or swipe the lens over it to preview the change. Configure which rows collapse and save the choice with <code>onCollapse</code>. The <a href="https://github.com/soheab-com/liquid-glass-navbar/blob/v{{NAVBAR_VERSION}}/README.md#multi-row-navigation">multi-row integration guide</a> also covers responsive More limits, item updates, and lens appearance.</p>
       <div data-demo="rows"></div>
     </section>
 
@@ -184,6 +188,7 @@
       <h2>More</h2>
       <p><code>overflow</code> moves the items that don't fit into a More button. The <code>'menu'</code> style lists them in an anchored menu. The <code>'expand'</code> style opens a row of glass icons, in one shared pill or each in its own glass. Limit the bar with <code>maxRows</code> (for multi-row layouts) or <code>maxVisible</code>. <code>trigger: 'dots'</code> shows the More button as a vertical ⋮ icon without a label. More stays open while the page scrolls, and a tap outside closes it; set <code>closeOnScroll: true</code> to close it as soon as the page scrolls.</p>
       <p>The current tab stays selected when it moves behind More, and More shows that it holds the current tab. Slide onto More during a swipe and it opens, so the same finger can carry on into it. More closes on Escape, a tap outside, another tab, or a selection. Keep an item in the bar with <code>data-navbar-overflow="never"</code>.</p>
+      <p>Set <code>moreLabel: false</code> for icon-only More with the current icon. Pass a breakpoint map such as <code>{ 0: 4, 900: 10 }</code>, or a function of viewport width, as <code>maxVisible</code> for a responsive limit.</p>
       <div data-demo="more"></div>
     </section>
 
@@ -389,6 +394,7 @@
       <h2>Browser support</h2>
       <p>The navbar is built and tested in Chromium. Rim refraction of the live page is Chromium only; Safari and other browsers show the same glass with live blur and tint.</p>
     </section>
+{{PACKAGE_API}}
 {{CHANGELOG}}
   </main>
 </div>

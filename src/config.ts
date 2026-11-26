@@ -1,4 +1,4 @@
-import type { EqualWidthOverflow, NavbarColors, NavbarLayout, NavbarPosition } from '@soheab-com/liquid-glass-navbar';
+import type { EqualWidthOverflow, NavbarColors, NavbarLayout, NavbarPosition, NavbarLensOptions, NavbarLensStyle, NavbarOverflowOptions } from '@soheab-com/liquid-glass-navbar';
 import { customCssLimit } from './custom-css.js';
 import { isIconName, type IconName } from './icons.js';
 
@@ -9,6 +9,9 @@ export interface Item {
   showIcon: boolean;
   showLabel: boolean;
   action: boolean;
+  hidden?: boolean;
+  pin?: boolean;
+  noHover?: boolean;
   section: number;
   /** A manual row (1-3) for multi-row layouts; 0 lets the bar decide. */
   row: number;
@@ -51,6 +54,21 @@ export interface Config {
   expandSurface: ExpandSurface;
   overflowTrigger: 'more' | 'dots';
   maxVisible: number | null;
+  desktopMaxVisible: number | null;
+  sectionMaxVisible: number | null;
+  sectionEqual: boolean;
+  moreLabel: boolean;
+  closeOnScroll: boolean;
+  collapsible: boolean;
+  startCollapsed: boolean;
+  lensStyle: NavbarLensStyle;
+  lensAccent: string | null;
+  lensBackground: string | null;
+  lensRadius: number | null;
+  lensBlur: number;
+  lensPressScale: number | null;
+  lensDragScale: number | null;
+  hoverGroup: boolean;
   scrollCompact: boolean;
   contrast: boolean;
   adaptiveTint: boolean;
@@ -105,6 +123,21 @@ export const defaultConfig = (): Config => ({
   expandSurface: 'shared',
   overflowTrigger: 'more',
   maxVisible: null,
+  desktopMaxVisible: null,
+  sectionMaxVisible: null,
+  sectionEqual: false,
+  moreLabel: true,
+  closeOnScroll: false,
+  collapsible: false,
+  startCollapsed: false,
+  lensStyle: 'glass',
+  lensAccent: null,
+  lensBackground: null,
+  lensRadius: null,
+  lensBlur: 1.5,
+  lensPressScale: null,
+  lensDragScale: null,
+  hoverGroup: false,
   scrollCompact: false,
   contrast: false,
   adaptiveTint: false,
@@ -128,6 +161,8 @@ const hex = (value: unknown, fallback: string): string =>
   typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
 const clamp = (value: unknown, min: number, max: number, fallback: number): number =>
   typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : fallback;
+const decimal = (value: unknown, min: number, max: number, fallback: number): number =>
+  typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
 const record = (value: unknown): Record<string, unknown> =>
   typeof value === 'object' && value !== null ? value as Record<string, unknown> : {};
 
@@ -141,6 +176,9 @@ function parseItem(value: unknown): Item | null {
     showIcon: bool(raw.showIcon, true),
     showLabel: bool(raw.showLabel, true),
     action: bool(raw.action, false),
+    hidden: bool(raw.hidden, false),
+    pin: bool(raw.pin, false),
+    noHover: bool(raw.noHover, false),
     section: clamp(raw.section, 0, 1, 0),
     row: clamp(raw.row, 0, 3, 0),
     badge: typeof raw.badge === 'string' && /^(dot|[1-9][0-9]{0,2})?$/.test(raw.badge) ? raw.badge : '',
@@ -179,6 +217,21 @@ export function parseConfig(value: unknown): Config {
     expandSurface: pick(expandSurfaces, raw.expandSurface, base.expandSurface),
     overflowTrigger: raw.overflowTrigger === 'dots' ? 'dots' : 'more',
     maxVisible: raw.maxVisible === null || raw.maxVisible === undefined ? null : clamp(raw.maxVisible, 1, 12, 4),
+    desktopMaxVisible: typeof raw.desktopMaxVisible === 'number' ? clamp(raw.desktopMaxVisible, 1, 16, 8) : null,
+    sectionMaxVisible: typeof raw.sectionMaxVisible === 'number' ? clamp(raw.sectionMaxVisible, 1, 16, 4) : null,
+    sectionEqual: bool(raw.sectionEqual, base.sectionEqual),
+    moreLabel: bool(raw.moreLabel, base.moreLabel),
+    closeOnScroll: bool(raw.closeOnScroll, base.closeOnScroll),
+    collapsible: bool(raw.collapsible, base.collapsible),
+    startCollapsed: bool(raw.startCollapsed, base.startCollapsed),
+    lensStyle: pick(['glass', 'tinted', 'outline'] as const, raw.lensStyle, base.lensStyle),
+    lensBackground: typeof raw.lensBackground === 'string' ? hex(raw.lensBackground, '#ffffff') : null,
+    lensRadius: typeof raw.lensRadius === 'number' ? clamp(raw.lensRadius, 0, 999, 24) : null,
+    lensAccent: typeof raw.lensAccent === 'string' ? hex(raw.lensAccent, '#2152a5') : null,
+    lensBlur: decimal(raw.lensBlur, 0, 12, base.lensBlur),
+    lensPressScale: typeof raw.lensPressScale === 'number' ? decimal(raw.lensPressScale, .5, 2, 1.08) : null,
+    lensDragScale: typeof raw.lensDragScale === 'number' ? decimal(raw.lensDragScale, .5, 2, 1.22) : null,
+    hoverGroup: bool(raw.hoverGroup, base.hoverGroup),
     scrollCompact: bool(raw.scrollCompact, base.scrollCompact),
     contrast: bool(raw.contrast, base.contrast),
     adaptiveTint: bool(raw.adaptiveTint, base.adaptiveTint),
@@ -225,15 +278,32 @@ export function decodeConfig(encoded: string): Config | null {
 }
 
 /** The navbar's `overflow` option, or undefined when More is off. */
-export const overflowValue = (config: Config): { style: 'menu' | 'expand'; trigger?: 'dots'; surface?: ExpandSurface; maxVisible?: number } | undefined => {
+export const overflowValue = (config: Config): NavbarOverflowOptions | undefined => {
   if (config.overflow === 'none') return undefined;
   return {
     style: config.overflow,
     ...(config.overflowTrigger === 'dots' ? { trigger: 'dots' as const } : {}),
     ...(config.overflow === 'expand' && config.expandSurface !== 'shared' ? { surface: config.expandSurface } : {}),
-    ...(config.maxVisible === null ? {} : { maxVisible: config.maxVisible }),
+    ...(config.desktopMaxVisible !== null
+      ? { maxVisible: { ...(config.maxVisible === null ? {} : { 0: config.maxVisible }), 900: config.desktopMaxVisible } }
+      : config.maxVisible === null ? {} : { maxVisible: config.maxVisible }),
+    ...(config.moreLabel ? {} : { moreLabel: false }),
+    ...(config.closeOnScroll ? { closeOnScroll: true } : {}),
   };
 };
+
+export const lensValue = (config: Config): NavbarLensOptions => ({
+  ...(config.lensStyle === 'glass' ? {} : { style: config.lensStyle }),
+  ...(config.lensAccent === null ? {} : { accent: config.lensAccent }),
+  ...(config.lensBackground === null ? {} : { background: config.lensBackground }),
+  ...(config.lensRadius === null ? {} : { radius: `${config.lensRadius}px` }),
+  ...(config.lensBlur === 1.5 ? {} : { blur: config.lensBlur }),
+  ...(config.lensPressScale === null ? {} : { pressScale: config.lensPressScale }),
+  ...(config.lensDragScale === null ? {} : { dragScale: config.lensDragScale }),
+});
+
+export const canCollapse = (config: Config): boolean =>
+  config.collapsible && config.layout === 'rows' && (config.position === 'top' || config.position === 'bottom');
 
 export const badgeValue = (badge: string): { count: number } | { dot: true } | null =>
   badge === 'dot' ? { dot: true } : badge ? { count: Number(badge) } : null;

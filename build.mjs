@@ -1,6 +1,14 @@
 import * as esbuild from 'esbuild';
 import { copyFile, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { renderApiReference } from './scripts/api-reference.mjs';
+
+const packageRoot = path.dirname(path.dirname(fileURLToPath(import.meta.resolve('@soheab-com/liquid-glass-navbar'))));
+const navbar = JSON.parse(await readFile(path.join(packageRoot, 'package.json'), 'utf8'));
+const release = JSON.parse(await readFile('src/docs/release.json', 'utf8'));
+if (release.version !== navbar.version) throw new Error('Docs release metadata must match the installed navbar version.');
+const api = await renderApiReference(packageRoot);
 
 // `OUT=some/dir node build.mjs` builds a preview there and leaves the live dist/ alone.
 const preview = process.env.OUT;
@@ -49,12 +57,15 @@ for (const page of pages) {
   const html = (await readFile(page.template, 'utf8'))
     .replace('{{APP_JS}}', path.relative(from, js))
     .replace('{{APP_CSS}}', path.relative(from, info.cssBundle))
-    .replace('{{CHANGELOG}}', changelog.trimEnd());
+    .replace('{{CHANGELOG}}', changelog.trimEnd())
+    .replace('{{PACKAGE_API}}', () => api)
+    .replaceAll('{{NAVBAR_VERSION}}', navbar.version)
+    .replace('{{NAVBAR_PUBLISHED}}', release.publishedAt);
   await writeFile(target, html);
 }
 
 await copyFile('src/docs/theme-bootstrap.js', path.join(out, 'docs/theme-bootstrap.js'));
-await copyFile('src/docs/llms.txt', path.join(out, 'docs/llms.txt'));
+await writeFile(path.join(out, 'docs/llms.txt'), (await readFile('src/docs/llms.txt', 'utf8')).replaceAll('{{NAVBAR_VERSION}}', navbar.version));
 
 if (!preview) {
   // Swap the finished build in so the live site never serves a partial one.

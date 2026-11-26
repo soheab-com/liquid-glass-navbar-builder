@@ -1,4 +1,4 @@
-import { mountLiquidGlassNavbar, type LiquidGlassNavbar } from '@soheab-com/liquid-glass-navbar';
+import { mountLiquidGlassNavbar, type LiquidGlassNavbar, type NavbarHoverOptions } from '@soheab-com/liquid-glass-navbar';
 import '@soheab-com/liquid-glass-navbar/navbar.css';
 import highlight from 'highlight.js/lib/core';
 import css from 'highlight.js/lib/languages/css';
@@ -8,7 +8,7 @@ import './styles.css';
 import {
   backdrops, backgroundKinds, backgroundValue, decodeConfig, defaultConfig, encodeConfig, newId, positions, themes,
   colorsValue, equalOverflows, type Config, type Item, badgeValue, overflowValue, layouts, overflowChoices,
-  expandSurfaces, maxItems,
+  expandSurfaces, maxItems, lensValue, canCollapse,
 } from './config.js';
 import { cssFor, darkPalette, lightPalette, htmlFor, scriptFor } from './code.js';
 import { cleanCss, customCssLimit } from './custom-css.js';
@@ -42,6 +42,8 @@ function loadConfig(): Config {
 
 let config = loadConfig();
 let navbar: LiquidGlassNavbar | undefined;
+let pairedNavbar: LiquidGlassNavbar | undefined;
+let pairObserver: ResizeObserver | undefined;
 const customSheet = new CSSStyleSheet();
 document.adoptedStyleSheets = [...document.adoptedStyleSheets, customSheet];
 let codeTab: 'html' | 'ts' | 'css' = 'html';
@@ -57,6 +59,9 @@ function announce(message: string): void {
 }
 
 function renderPreview(): void {
+  pairObserver?.disconnect();
+  pairedNavbar?.destroy();
+  pairedNavbar = undefined;
   navbar?.destroy();
   stage.replaceChildren();
   frame.dataset.theme = config.theme;
@@ -81,6 +86,23 @@ function renderPreview(): void {
   const colors = colorsValue(config);
   const stories = [...sample.querySelectorAll<HTMLElement>('.nb-story')];
   let beforeHover: number | undefined;
+  const hover: NavbarHoverOptions | undefined = config.hover === 'off' ? undefined : {
+    delay: config.hoverDelay,
+    keep: config.hover === 'keep',
+    ...(config.hoverGroup ? { group: 'builder-preview' } : {}),
+    onPreview(item) {
+      const index = item.dataset.story === undefined ? buttons.findIndex((button) => button === item) : Number(item.dataset.story);
+      const story = stories[index % stories.length];
+      if (!story) return;
+      beforeHover ??= sample.scrollTop;
+      sample.scrollTo({ top: sample.scrollTop + story.getBoundingClientRect().top - sample.getBoundingClientRect().top, behavior: 'instant' });
+    },
+    onPreviewEnd() {
+      if (beforeHover !== undefined) sample.scrollTo({ top: beforeHover, behavior: 'instant' });
+      beforeHover = undefined;
+    },
+  };
+
   navbar = mountLiquidGlassNavbar(nav, {
     position: config.position,
     labels: config.labels,
@@ -92,25 +114,16 @@ function renderPreview(): void {
     colors,
     layout: config.layout,
     ...(config.overflow !== 'none' && config.maxRows !== null && config.layout !== 'row' ? { maxRows: config.maxRows } : {}),
-    ...(overflowValue(config) ? { overflow: { ...overflowValue(config), boundary: frame } } : {}),
+    ...(overflowValue(config) ? { overflow: {
+      ...overflowValue(config), boundary: frame,
+      ...(config.desktopMaxVisible === null ? {} : {
+        maxVisible: () => frame.dataset.device === 'desktop' ? config.desktopMaxVisible! : config.maxVisible ?? Infinity,
+      }),
+    } } : {}),
     ...(config.scrollCompact ? { scrollCompact: { source: sample } } : {}),
-    ...(config.hover === 'off' ? {} : {
-      hoverNavigation: {
-        delay: config.hoverDelay,
-        keep: config.hover === 'keep',
-        onPreview(item) {
-          const index = buttons.findIndex((button) => button === item);
-          const story = stories[index % stories.length];
-          if (!story) return;
-          beforeHover ??= sample.scrollTop;
-          sample.scrollTo({ top: sample.scrollTop + story.getBoundingClientRect().top - sample.getBoundingClientRect().top, behavior: 'instant' });
-        },
-        onPreviewEnd() {
-          if (beforeHover !== undefined) sample.scrollTo({ top: beforeHover, behavior: 'instant' });
-          beforeHover = undefined;
-        },
-      },
-    }),
+    ...(canCollapse(config) ? { collapsible: { initial: config.startCollapsed ? 'collapsed' as const : 'open' as const } } : {}),
+    ...(hover ? { hoverNavigation: hover } : {}),
+    lens: lensValue(config),
     ...(config.magnify ? { magnify: true } : {}),
     ...(config.animations ? { animations: true } : {}),
     ...(config.contrast ? { contrast: { adaptiveTint: config.adaptiveTint } } : {}),
@@ -143,6 +156,39 @@ function renderPreview(): void {
   for (const [name, value] of Object.entries(palette)) {
     if (!nav.style.getPropertyValue(name)) nav.style.setProperty(name, value);
   }
+  if (hover && config.hoverGroup) {
+    const related = document.createElement('nav');
+    related.setAttribute('aria-label', 'Related preview bar');
+    for (const [index, story] of stories.entries()) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.story = String(index);
+      const label = document.createElement('span');
+      label.dataset.navbarLabel = '';
+      label.textContent = `Story ${index + 1}`;
+      label.title = story.querySelector('h2')?.textContent ?? '';
+      button.append(label);
+      related.append(button);
+    }
+    stage.append(related);
+    pairedNavbar = mountLiquidGlassNavbar(related, {
+      position: config.position, colors, lens: lensValue(config), hoverNavigation: hover,
+      onSelect(item) { hover.onPreview?.(item); beforeHover = undefined; },
+    });
+    const placeRelated = () => {
+      const side = config.position;
+      const main = nav.getBoundingClientRect();
+      const bounds = stage.getBoundingClientRect();
+      const offset = side === 'bottom' ? bounds.bottom - main.top : side === 'top' ? main.bottom - bounds.top
+        : side === 'left' ? main.right - bounds.left : bounds.right - main.left;
+      related.style.setProperty('--lg-nav-offset', `${Math.round(offset + 8)}px`);
+    };
+    pairObserver = new ResizeObserver(placeRelated);
+    pairObserver.observe(nav);
+    pairObserver.observe(stage);
+    placeRelated();
+  }
+
   navbar.setReorderMode(config.reorderable && element('#reorder-mode', HTMLInputElement).checked);
   for (const button of buttons) {
     const item = config.items.find((entry) => entry.id === button.dataset.itemId);
@@ -288,6 +334,16 @@ function renderItems(): void {
       icon,
       checkbox('Hide icon', !item.showIcon, (checked) => updateItem(item.id, { showIcon: !checked })),
       checkbox('Hide label', !item.showLabel, (checked) => updateItem(item.id, { showLabel: !checked })),
+      checkbox('Hide item', item.hidden === true, (hidden) => {
+        const button = stage.querySelector<HTMLButtonElement>(`[data-item-id="${CSS.escape(item.id)}"]`);
+        if (!button || !navbar) return updateItem(item.id, { hidden });
+        config = { ...config, items: config.items.map((entry) => entry.id === item.id ? { ...entry, hidden } : entry) };
+        navbar.setItemHidden(button, hidden);
+        save();
+        renderCode();
+      }),
+      checkbox('Keep out of More', item.pin === true, (pin) => updateItem(item.id, { pin })),
+      checkbox('Skip hover', item.noHover === true, (noHover) => updateItem(item.id, { noHover })),
       checkbox('Action', item.action, (checked) => updateItem(item.id, { action: checked })),
       choice('Badge', [['', 'No badge'], ['dot', 'Dot'], ['3', 'Count 3'], ['12', 'Count 12'], ['120', 'Count 120']], item.badge,
         (value) => updateItem(item.id, { badge: value })),
@@ -335,7 +391,28 @@ function bindColor(id: string, key: 'accent' | 'color' | 'color2' | 'unselected'
   input.addEventListener('change', apply);
 }
 
+const featureChecks = [
+  ['section-equal', 'sectionEqual'], ['more-label', 'moreLabel'], ['close-overflow-scroll', 'closeOnScroll'],
+  ['collapsible', 'collapsible'], ['start-collapsed', 'startCollapsed'], ['hover-group', 'hoverGroup'],
+] as const;
+const featureNumbers = [
+  ['desktop-max-visible', 'desktopMaxVisible'], ['section-max-visible', 'sectionMaxVisible'],
+  ['lens-press-scale', 'lensPressScale'], ['lens-drag-scale', 'lensDragScale'], ['lens-radius', 'lensRadius'],
+] as const;
+
 function syncControls(): void {
+  for (const [id, key] of featureChecks) element(`#${id}`, HTMLInputElement).checked = config[key];
+  for (const [id, key] of featureNumbers) element(`#${id}`, HTMLInputElement).value = String(config[key] ?? '');
+  element('#lens-style', HTMLSelectElement).value = config.lensStyle;
+  element('#lens-accent-auto', HTMLInputElement).checked = config.lensAccent === null;
+  element('#lens-accent', HTMLInputElement).value = config.lensAccent ?? config.accent;
+  element('#lens-accent', HTMLInputElement).disabled = config.lensAccent === null;
+  element('#lens-background-auto', HTMLInputElement).checked = config.lensBackground === null;
+  element('#lens-background', HTMLInputElement).value = config.lensBackground ?? '#ffffff';
+  element('#lens-background', HTMLInputElement).disabled = config.lensBackground === null;
+  element('#lens-blur', HTMLInputElement).value = String(config.lensBlur);
+  element('#collapse-controls', HTMLElement).hidden = config.layout !== 'rows' || config.position === 'left' || config.position === 'right';
+  element('#hover-group-row', HTMLElement).hidden = config.hover === 'off';
   element('#position', HTMLSelectElement).value = config.position;
   element('#theme', HTMLSelectElement).value = config.theme;
   element('#background', HTMLSelectElement).value = config.background;
@@ -422,13 +499,34 @@ iconColors.addEventListener('change', () => update({ iconColors: iconColors.chec
 bindColor('selected-icon', 'selectedIcon');
 bindColor('unselected-icon', 'unselectedIcon');
 
-function bindChoice<K extends 'layout' | 'overflow' | 'expandSurface' | 'hover'>(id: string, key: K, values: readonly Config[K][]): void {
+function bindChoice<K extends 'layout' | 'overflow' | 'expandSurface' | 'hover' | 'lensStyle'>(id: string, key: K, values: readonly Config[K][]): void {
   const select = element(`#${id}`, HTMLSelectElement);
   select.addEventListener('change', () => {
     const value = values.find((entry) => entry === select.value);
     if (value !== undefined) update({ [key]: value } as Partial<Config>, { items: key === 'layout' });
   });
 }
+for (const [id, key] of featureChecks) {
+  const input = element(`#${id}`, HTMLInputElement);
+  input.addEventListener('change', () => update({ [key]: input.checked }));
+}
+for (const [id, key] of featureNumbers) {
+  const input = element(`#${id}`, HTMLInputElement);
+  input.addEventListener('change', () => update({ [key]: Number.isFinite(input.valueAsNumber)
+    ? Math.min(Number(input.max), Math.max(Number(input.min), input.valueAsNumber)) : null }));
+}
+const lensAccent = element('#lens-accent', HTMLInputElement);
+element('#lens-accent-auto', HTMLInputElement).addEventListener('change', (event) =>
+  update({ lensAccent: (event.currentTarget as HTMLInputElement).checked ? null : lensAccent.value }));
+lensAccent.addEventListener('change', () => update({ lensAccent: lensAccent.value }));
+const lensBackground = element('#lens-background', HTMLInputElement);
+element('#lens-background-auto', HTMLInputElement).addEventListener('change', (event) =>
+  update({ lensBackground: (event.currentTarget as HTMLInputElement).checked ? null : lensBackground.value }));
+lensBackground.addEventListener('change', () => update({ lensBackground: lensBackground.value }));
+const lensBlur = element('#lens-blur', HTMLInputElement);
+lensBlur.addEventListener('change', () => update({ lensBlur: Number.isFinite(lensBlur.valueAsNumber)
+  ? Math.min(12, Math.max(0, lensBlur.valueAsNumber)) : 1.5 }));
+bindChoice('lens-style', 'lensStyle', ['glass', 'tinted', 'outline'] as const);
 bindChoice('layout', 'layout', layouts);
 bindChoice('hover-navigation', 'hover', ['off', 'preview', 'keep'] as const);
 const hoverDelay = element('#hover-delay', HTMLInputElement);

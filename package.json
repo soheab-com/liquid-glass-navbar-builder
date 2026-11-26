@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit",
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "update-navbar": "node scripts/update-navbar-release.mjs"
   },
   "dependencies": {
     "@soheab-com/liquid-glass-navbar": "github:soheab-com/liquid-glass-navbar#v0.12.0",

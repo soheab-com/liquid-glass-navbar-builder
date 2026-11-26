@@ -22,7 +22,9 @@ default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src
 
 ## Navbar package
 
-The builder installs the navbar from GitHub at a pinned release (see `package.json`). To try local navbar changes, run `npm link ../liquid-glass-navbar` with the navbar repo next to this one. When updating the pinned release, add its dated notes from the package changelog to `src/docs/changelog.html`.
+The builder installs the navbar from GitHub at a pinned release (see `package.json`). To try local navbar changes, run `npm link ../liquid-glass-navbar` with the navbar repo next to this one. Run `npm run update-navbar` to update the pin, release timestamp and dated changelog from the latest stable GitHub release. A docs build generates the full TypeScript reference and attribute and CSS token indexes from the installed package. It rejects a mismatch between the pin and release metadata.
+
+On the docs host, the daily `navbar-builder-release-sync.timer` runs `scripts/sync-navbar-release.sh`. A new release is checked and built in a temporary Git worktree before publishing the dependency update and rebuilding the live site. The updater waits if the live checkout has local work. New builder controls and narrative examples are maintained separately from the generated reference.
 
 ## Disclaimer
 

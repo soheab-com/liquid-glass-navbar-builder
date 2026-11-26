@@ -523,3 +523,9 @@ pre {
 
 :root[data-theme="dark"] { color-scheme: dark; }
 :root[data-theme="light"] { color-scheme: light; }
+
+.dd-api-exports { display: grid; gap: .35rem; }
+.dd-api-exports details { min-width: 0; padding: .35rem .75rem; border: 1px solid var(--edge); border-radius: 10px; }
+.dd-api-exports summary { cursor: pointer; }
+.dd-api-exports pre { overflow: auto; max-width: 100%; padding: .8rem; border-radius: 8px; background: var(--code-bg); }
+.dd-api-tokens { columns: 15rem; overflow-wrap: anywhere; }

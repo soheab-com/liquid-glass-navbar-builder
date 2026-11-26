@@ -1,4 +1,4 @@
-import { backgroundValue, badgeValue, colorsValue, overflowValue, type Config, type Item } from './config.js';
+import { backgroundValue, badgeValue, colorsValue, overflowValue, lensValue, canCollapse, type Config, type Item } from './config.js';
 import { cleanCss } from './custom-css.js';
 import { icons } from './icons.js';
 
@@ -25,6 +25,9 @@ const escape = (text: string): string =>
 
 function buttonHtml(item: Item, current: boolean, labels: boolean, indent: string): string {
   const attributes = ['type="button"'];
+  if (item.hidden) attributes.push('hidden');
+  if (item.pin) attributes.push('data-navbar-overflow="never"');
+  if (item.noHover) attributes.push('data-navbar-no-hover');
   if (item.action) attributes.push('data-navbar-action');
   else if (current) attributes.push('aria-current="page"');
   const labelShown = item.showLabel && item.label !== '';
@@ -41,14 +44,22 @@ function buttonHtml(item: Item, current: boolean, labels: boolean, indent: strin
 }
 
 export function firstTab(config: Config): Item | undefined {
-  return config.items.find((item) => !item.action && ((item.showIcon && item.icon) || (config.labels && item.showLabel && item.label)));
+  return config.items.find((item) => !item.hidden && !item.action && ((item.showIcon && item.icon) || (config.labels && item.showLabel && item.label)));
 }
 
 export function htmlFor(config: Config): string {
   const current = firstTab(config)?.id;
   const groups = sectionsOf(config);
   const body = config.sectioned
-    ? groups.map((group) => `  <div data-navbar-section>\n${group.map((item) => buttonHtml(item, item.id === current, config.labels, '    ')).join('\n')}\n  </div>`).join('\n')
+    ? groups.map((group, index) => {
+      const row = group.find((item) => item.row > 0)?.row ?? (canCollapse(config) ? index + 1 : 0);
+      const attributes = [
+        'data-navbar-section', row > 0 ? `data-navbar-row="${row}"` : '',
+        config.sectionEqual ? 'data-navbar-equal' : '',
+        config.sectionMaxVisible === null ? '' : `data-navbar-max-visible="${config.sectionMaxVisible}"`,
+      ].filter(Boolean).join(' ');
+      return `  <div ${attributes}>\n${group.map((item) => buttonHtml(item, item.id === current, config.labels, '    ')).join('\n')}\n  </div>`;
+    }).join('\n')
     : groups.flat().map((item) => buttonHtml(item, item.id === current, config.labels, '  ')).join('\n');
   return `<nav id="app-navbar" aria-label="Navigation">\n${body}\n</nav>`;
 }
@@ -75,19 +86,25 @@ export function scriptFor(config: Config): string {
   if (background) options.push(`  background: '${background}',`);
   if (config.transparency !== null) options.push(`  transparency: ${config.transparency},`);
   if (config.reorderable) options.push('  reorderable: true,');
+  if (canCollapse(config)) options.push(`  collapsible: { initial: '${config.startCollapsed ? 'collapsed' : 'open'}' },`);
+  const lens = lensValue(config);
+  if (Object.keys(lens).length) options.push(`  lens: ${JSON.stringify(lens)},`);
   if (config.layout !== 'row') options.push(`  layout: '${config.layout}',`);
   const overflow = overflowValue(config);
   if (overflow) {
     const parts = [`style: '${overflow.style}'`];
     if (overflow.trigger) parts.push(`trigger: '${overflow.trigger}'`);
     if (overflow.surface) parts.push(`surface: '${overflow.surface}'`);
-    if (overflow.maxVisible !== undefined) parts.push(`maxVisible: ${overflow.maxVisible}`);
+    if (overflow.maxVisible !== undefined) parts.push(`maxVisible: ${JSON.stringify(overflow.maxVisible)}`);
+    if (overflow.moreLabel === false) parts.push('moreLabel: false');
+    if (overflow.closeOnScroll) parts.push('closeOnScroll: true');
     options.push(`  overflow: { ${parts.join(', ')} },`);
     if (config.maxRows !== null && config.layout !== 'row') options.push(`  maxRows: ${config.maxRows},`);
   }
   if (config.animations) options.push('  animations: true, // or { reflow, popovers, tap, badges }');
   if (config.hover !== 'off') {
     options.push('  hoverNavigation: {', `    delay: ${config.hoverDelay},`, `    keep: ${config.hover === 'keep'},`,
+      ...(config.hoverGroup ? ["    group: 'preview', // Use this group on another bar too."] : []),
       '    onPreview(button) {', '      // Preview the section for this button.', '    },',
       '    onPreviewEnd() {', '      // Restore the previous position when a preview is cancelled.', '    },', '  },');
   }
