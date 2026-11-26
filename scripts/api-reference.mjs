@@ -1,11 +1,22 @@
-import { readFile, readdir } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import ts from 'typescript';
 
 const escape = (value) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
+// Published packages ship compiled code and declarations in dist/ (1.0 and later); earlier tags shipped src/.
+async function packageLayout(packageRoot) {
+  try {
+    await access(path.join(packageRoot, 'dist/index.d.ts'));
+    return { dir: 'dist', entry: 'index.d.ts', code: (file) => file.endsWith('.js') };
+  } catch {
+    return { dir: 'src', entry: 'index.ts', code: (file) => file.endsWith('.ts') };
+  }
+}
+
 export async function renderApiReference(packageRoot) {
-  const entry = path.resolve(packageRoot, 'src/index.ts');
+  const layout = await packageLayout(packageRoot);
+  const entry = path.resolve(packageRoot, layout.dir, layout.entry);
   const program = ts.createProgram([entry], {
     target: ts.ScriptTarget.ESNext,
     module: ts.ModuleKind.ESNext,
@@ -30,10 +41,10 @@ export async function renderApiReference(packageRoot) {
       <pre><code>${escape(text)}</code></pre></details>`;
   });
 
-  const css = await readFile(path.join(packageRoot, 'src/navbar.css'), 'utf8');
-  const files = await readdir(path.join(packageRoot, 'src'));
-  const js = await Promise.all(files.filter((file) => file.endsWith('.ts'))
-    .map((file) => readFile(path.join(packageRoot, 'src', file), 'utf8')));
+  const css = await readFile(path.join(packageRoot, layout.dir, 'navbar.css'), 'utf8');
+  const files = await readdir(path.join(packageRoot, layout.dir));
+  const js = await Promise.all(files.filter(layout.code)
+    .map((file) => readFile(path.join(packageRoot, layout.dir, file), 'utf8')));
   const variables = [...new Set(css.match(/--(lg-nav|lg-popover)-[\w-]+/g))].sort();
   const runtimeAttributes = new Set(['data-navbar-context', 'data-navbar-context-hidden', 'data-navbar-generated',
     'data-navbar-lens', 'data-navbar-overflow-current']);
