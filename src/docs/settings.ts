@@ -4,7 +4,7 @@ import './docs.css';
 import { themeButton } from './theme.js';
 import { reveal, slideIn } from './motion.js';
 import {
-  defaultSettings, groups, loadSettings, mountSiteBar, onSettingsChange, saveSettings, type SiteBarSettings, type TopicHoverMode,
+  defaultSettings, groups, loadSettings, mountSiteBar, onSettingsChange, saveSettings, type SiteBarSettings,
 } from './site-bar.js';
 
 type Key = keyof SiteBarSettings;
@@ -13,8 +13,8 @@ type Field =
   | { type: 'check'; key: Key; label: string; hint?: string; when?: When }
   | { type: 'range'; key: Key; label: string; min: number; max: number; step?: number; unit?: string; zero?: string; when?: When }
   | { type: 'color'; key: Key; label: string; nullable?: boolean; when?: When }
-  | { type: 'visibility' }
-  | { type: 'topic-hover' };
+  | { type: 'visibility' };
+
 type When = (settings: SiteBarSettings) => boolean;
 
 const horizontal: When = (s) => s.position === 'top' || s.position === 'bottom';
@@ -74,7 +74,7 @@ const fieldsets: readonly { id: string; tab: string; legend: string; note?: stri
       { type: 'check', key: 'scrollCompact', label: 'Compact while scrolling down' },
       { type: 'range', key: 'compactThreshold', label: 'Scroll before it changes', min: 4, max: 80, unit: 'px', when: (s) => s.scrollCompact },
       { type: 'check', key: 'swipe', label: 'Swipe between items' },
-      { type: 'topic-hover' },
+      { type: 'select', key: 'defaultTopicHover', label: 'Hover on all topics', options: [['preview', 'Preview and return'], ['keep', 'Scroll and keep'], ['off', 'Off']] },
       { type: 'range', key: 'topicHoverDelay', label: 'Hover preview delay', min: 0, max: 5, step: .1, unit: ' s', zero: 'None' },
       { type: 'check', key: 'animations', label: 'Smooth animations' },
       { type: 'check', key: 'reorderable', label: 'Let me reorder the groups' },
@@ -208,7 +208,7 @@ function refresh(): void {
 }
 
 let fieldSequence = 0;
-function field(spec: Exclude<Field, { type: 'visibility' | 'topic-hover' }>): HTMLElement {
+function field(spec: Exclude<Field, { type: 'visibility' }>): HTMLElement {
   const row = document.createElement('div');
   row.className = `ds-field ds-field--${spec.type}`;
   const id = `ds-${++fieldSequence}`;
@@ -348,42 +348,6 @@ function visibilityTable(): HTMLElement {
   return table;
 }
 
-function topicHoverSettings(): HTMLElement {
-  const group = document.createElement('div');
-  group.className = 'ds-setting ds-topic-hover';
-  group.innerHTML = `<div class="ds-field"><label for="ds-hover-default">Hover on all topics</label><select id="ds-hover-default">
-      <option value="preview">Preview and return</option><option value="keep">Scroll and keep</option><option value="off">Off</option>
-    </select></div>
-    <div class="ds-field"><label for="ds-hover-topic">Topic override</label><select id="ds-hover-topic"></select></div>
-    <div class="ds-field"><label for="ds-hover-mode">On hover for this topic</label><select id="ds-hover-mode">
-      <option value="">Use all-topics setting</option><option value="preview">Preview and return</option>
-      <option value="keep">Scroll and keep</option><option value="off">Off</option>
-    </select></div>`;
-  const defaultMode = group.querySelector<HTMLSelectElement>('#ds-hover-default')!;
-  const topic = group.querySelector<HTMLSelectElement>('#ds-hover-topic')!;
-  const mode = group.querySelector<HTMLSelectElement>('#ds-hover-mode')!;
-  for (const sectionGroup of groups) {
-    const choices = document.createElement('optgroup');
-    choices.label = sectionGroup.label;
-    for (const [id, label] of sectionGroup.sections) choices.append(new Option(label, id));
-    topic.append(choices);
-  }
-  const sync = () => {
-    defaultMode.value = settings.defaultTopicHover;
-    mode.value = settings.topicHover[topic.value] ?? '';
-  };
-  defaultMode.addEventListener('change', () => change({ defaultTopicHover: defaultMode.value as TopicHoverMode }));
-  topic.addEventListener('change', sync);
-  mode.addEventListener('change', () => {
-    const topicHover = { ...settings.topicHover };
-    if (mode.value === '') delete topicHover[topic.value];
-    else topicHover[topic.value] = mode.value as TopicHoverMode;
-    change({ topicHover });
-  });
-  rows.push({ element: group, when: (s) => s.sectionBar, sync });
-  return group;
-}
-
 // One panel per group, chosen with a tab bar that is the navbar itself (swipe between groups, too).
 const panels = new Map<string, HTMLElement>();
 for (const group of fieldsets) {
@@ -402,7 +366,6 @@ for (const group of fieldsets) {
   }
   for (const spec of group.fields) {
     if (spec.type === 'visibility') set.append(visibilityTable());
-    else if (spec.type === 'topic-hover') set.append(topicHoverSettings());
     else set.append(field(spec));
   }
   form.append(set);

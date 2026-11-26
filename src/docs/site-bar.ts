@@ -32,7 +32,6 @@ export interface SiteBarSettings {
   sectionBar: boolean;
   defaultTopicHover: TopicHoverMode;
   topicHoverDelay: number;
-  topicHover: Partial<Record<string, TopicHoverMode>>;
   settingsItem: boolean;
   separateSettings: boolean;
   layout: 'row' | 'wrap' | 'rows';
@@ -69,7 +68,7 @@ export interface SiteBarSettings {
 }
 
 export const defaultSettings = (): SiteBarSettings => ({
-  position: 'bottom', labels: true, sectionBar: true, defaultTopicHover: 'preview', topicHoverDelay: 2, topicHover: {}, settingsItem: true, separateSettings: true,
+  position: 'bottom', labels: true, sectionBar: true, defaultTopicHover: 'preview', topicHoverDelay: 2, settingsItem: true, separateSettings: true,
   layout: 'row', maxRows: 2, overflow: 'menu', overflowTrigger: 'more', keepMoreOpen: true, overflowSurface: 'shared', maxVisible: 0,
   equalWidth: false, equalOverflow: 'natural', transparency: null, background: 'theme', color: '#dce9f6', color2: '#e9dcf6',
   accent: null, unselected: null, selectedIcon: null, unselectedIcon: null,
@@ -96,11 +95,6 @@ export function loadSettings(): SiteBarSettings {
         if (value === 'off' || value === 'preview' || value === 'keep') merged.defaultTopicHover = value;
       } else if (key === 'topicHoverDelay') {
         if (typeof value === 'number' && Number.isFinite(value)) merged.topicHoverDelay = Math.min(5, Math.max(0, value));
-      } else if (key === 'topicHover') {
-        const entries = typeof value === 'object' && value !== null ? value as Record<string, unknown> : {};
-        merged.topicHover = Object.fromEntries(groups.flatMap((group) => group.sections)
-          .filter(([id]) => entries[id] === 'off' || entries[id] === 'preview' || entries[id] === 'keep')
-          .map(([id]) => [id, entries[id]]));
       } else if (key === 'hidden') {
         merged.hidden = typeof value === 'object' && value !== null ? value : {};
       } else if (['accent', 'unselected', 'selectedIcon', 'unselectedIcon'].includes(key)) {
@@ -239,8 +233,30 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     stopWatches.push(() => moreWatch.disconnect());
   }
 
+  const swipeListeners = new AbortController();
+  let crossBar: { origin: HTMLElement; pointerId: number } | undefined;
+  const barLinkAt = (x: number, y: number): HTMLAnchorElement | undefined => {
+    const link = document.elementFromPoint(x, y)?.closest<HTMLAnchorElement>('a[href^="#"]');
+    return link && (mainNav?.contains(link) || subNav?.contains(link)) ? link : undefined;
+  };
+  window.addEventListener('pointerup', (event) => {
+    const swipe = crossBar;
+    if (swipe?.pointerId !== event.pointerId) return;
+    crossBar = undefined;
+    const link = barLinkAt(event.clientX, event.clientY);
+    if (link && !swipe.origin.contains(link)) {
+      event.stopImmediatePropagation();
+      window.dispatchEvent(new PointerEvent('pointercancel', { pointerId: event.pointerId }));
+      link.click();
+    }
+  }, { capture: true, signal: swipeListeners.signal });
+  window.addEventListener('pointercancel', () => { crossBar = undefined; }, { signal: swipeListeners.signal });
+
   function bindHover(topicNav: HTMLElement, current: () => boolean, delay = 0): void {
     let hovered: HTMLAnchorElement | undefined;
+    topicNav.toggleAttribute('data-docs-swipe', settings.swipe);
+    let pointerId = 0;
+    let dragStart: { x: number; y: number } | undefined;
     let finger: { id: number; x: number; y: number } | undefined;
     let clientX = 0, clientY = 0;
     let hoverTimer: ReturnType<typeof setTimeout> | undefined;
@@ -255,11 +271,11 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       const revision = hoverRevision;
       leaveTimer = setTimeout(() => { if (current() && revision === hoverRevision) onHoverEnd?.(); }, 110);
     };
-    const track = (x: number, y: number, touch = false) => {
-      if (!current()) return;
-      const link = document.elementFromPoint(x, y)?.closest<HTMLAnchorElement>('a[href^="#"]');
-      const mode = link ? settings.topicHover[link.hash.slice(1)] ?? settings.defaultTopicHover : 'off';
-      if (!link || !topicNav.contains(link) || mode === 'off') {
+    const track = (x: number, y: number, touch = false, across = touch) => {
+      if (!current() && !across) return;
+      const link = barLinkAt(x, y);
+      const mode = settings.defaultTopicHover;
+      if (!link || (!across && !topicNav.contains(link)) || mode === 'off') {
         endHover();
         return;
       }
@@ -270,19 +286,41 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       hovered = link;
       hoverRevision++;
       const preview = () => {
-        if (current() && document.elementFromPoint(clientX, clientY)?.closest('a') === link) jump(link, mode, touch);
+        if ((current() || (across && (finger || dragStart))) && barLinkAt(clientX, clientY) === link) jump(link, mode, touch);
         else if (current()) onHoverEnd?.();
       };
       if (delay === 0) preview();
       else hoverTimer = setTimeout(preview, delay);
     };
     const trackHover = (event: PointerEvent) => {
-      if (event.pointerType !== 'touch' && !event.buttons) track(event.clientX, event.clientY);
+      if (event.pointerType === 'touch') return;
+      if (!event.buttons) track(event.clientX, event.clientY);
+      else if (dragStart && pointerId === event.pointerId
+        && Math.hypot(event.clientX - dragStart.x, event.clientY - dragStart.y) >= 8) {
+        const link = barLinkAt(event.clientX, event.clientY);
+        if (link && !topicNav.contains(link)) crossBar = { origin: topicNav, pointerId };
+        track(event.clientX, event.clientY, false, true);
+      }
     };
     topicNav.addEventListener('pointerover', trackHover);
     topicNav.addEventListener('pointermove', trackHover);
     topicNav.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') endHover(); });
-    topicNav.addEventListener('pointerdown', clearHover);
+    topicNav.addEventListener('pointerdown', (event) => {
+      clearHover();
+      if (event.isPrimary && event.button === 0) {
+        pointerId = event.pointerId;
+        if (settings.swipe && event.pointerType !== 'touch' && event.target instanceof Element
+          && event.target.closest('a[href^="#"]')) dragStart = { x: event.clientX, y: event.clientY };
+      }
+    });
+    const finishDrag = () => {
+      if (!dragStart) return;
+      dragStart = undefined;
+      endHover();
+    };
+    topicNav.addEventListener('pointerup', finishDrag);
+    topicNav.addEventListener('pointercancel', finishDrag);
+    topicNav.addEventListener('lostpointercapture', finishDrag);
     topicNav.addEventListener('touchstart', (event) => {
       if (!settings.swipe || event.touches.length !== 1 || !(event.target instanceof Element)
         || !event.target.closest('a[href^="#"]')) return;
@@ -295,8 +333,9 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       const touch = event.touches[0]!;
       const dx = Math.abs(touch.clientX - start.x);
       const dy = Math.abs(touch.clientY - start.y);
-      const vertical = settings.position === 'left' || settings.position === 'right';
-      if (touch.identifier !== start.id || (vertical ? dy < Math.max(8, dx) : dx < Math.max(8, dy))) return;
+      if (touch.identifier !== start.id || Math.hypot(dx, dy) < 8) return;
+      const link = barLinkAt(touch.clientX, touch.clientY);
+      if (link && !topicNav.contains(link)) crossBar = { origin: topicNav, pointerId };
       if (event.cancelable) event.preventDefault();
       track(touch.clientX, touch.clientY, true);
     }, { passive: false });
@@ -444,6 +483,6 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       teardown();
       build();
     },
-    destroy: teardown,
+    destroy() { swipeListeners.abort(); teardown(); },
   };
 }
