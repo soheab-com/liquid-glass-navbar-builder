@@ -156,8 +156,9 @@ export interface SiteBar {
 /**
  * Mount the site bars. `base` is the path to the docs page (`''` on the docs page, `'../'` from settings).
  * `onJump` is called when a bar item leads to a section on this page.
+ * The secondary bar reports mouse hover separately from link activation.
  */
-export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: SiteBarSettings, onJump?: (id: string) => void): SiteBar {
+export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: SiteBarSettings, onJump?: (id: string, reason: 'activate' | 'hover') => void): SiteBar {
   let settings = initial;
   let main: LiquidGlassNavbar | undefined;
   let sub: LiquidGlassNavbar | undefined;
@@ -241,6 +242,34 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       ...(settings.position === 'top' || settings.position === 'bottom' ? { layout: 'wrap' as const, maxRows: 2 } : {}),
       overflow: true,
     });
+    const topicNav = subNav;
+    let hovered: HTMLAnchorElement | undefined;
+    let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+    const clearHover = () => {
+      clearTimeout(hoverTimer);
+      hoverTimer = undefined;
+      hovered = undefined;
+    };
+    topicNav.addEventListener('pointermove', (event) => {
+      if (event.pointerType !== 'mouse' || event.buttons || topicNav !== subNav) {
+        clearHover();
+        return;
+      }
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#"]') : null;
+      if (!link || !topicNav.contains(link)) {
+        clearHover();
+        return;
+      }
+      if (link === hovered) return;
+      clearHover();
+      hovered = link;
+      hoverTimer = setTimeout(() => {
+        if (subNav === topicNav && link.isConnected && link.matches(':hover')) jump(link, 'hover');
+      }, 90);
+    });
+    topicNav.addEventListener('pointerleave', clearHover);
+    topicNav.addEventListener('pointerdown', clearHover);
+    topicNav.addEventListener('wheel', clearHover, { passive: true });
     placeSub();
     // Its size settles after layout; measure the room again when it does.
     sizeWatch.observe(subNav);
@@ -292,11 +321,11 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     measureRoom();
   }
 
-  function jump(item: NavbarItem): void {
+  function jump(item: NavbarItem, reason: 'activate' | 'hover' = 'activate'): void {
     if (!(item instanceof HTMLAnchorElement)) return;
     const url = new URL(item.href);
     if (url.pathname !== location.pathname || !url.hash) return;
-    onJump?.(url.hash.slice(1));
+    onJump?.(url.hash.slice(1), reason);
   }
 
   function build(): void {

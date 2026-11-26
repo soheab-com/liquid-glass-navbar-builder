@@ -663,19 +663,43 @@ for (const id of links.keys()) {
   if (section) spy.observe(section);
 }
 
-// The docs' own navigation is the component: a bar of groups and a bar of the current group's sections.
-const siteBar = mountSiteBar('', 'docs', loadSettings(), (id) => {
-  const target = document.getElementById(id);
-  if (target) jumping = { target, until: performance.now() + 1500 };
+// Hover uses the same scroll alignment as a topic link without changing the URL or keyboard focus.
+let hoverReading = false;
+const stopHoverScroll = () => {
+  if (!hoverReading) return;
+  hoverReading = false;
+  scrollTo({ top: scrollY, behavior: 'instant' });
+};
+addEventListener('wheel', stopHoverScroll, { passive: true });
+addEventListener('touchstart', stopHoverScroll, { passive: true });
+addEventListener('pointerdown', stopHoverScroll, { passive: true });
+addEventListener('keydown', (event) => {
+  if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) stopHoverScroll();
 });
-onSettingsChange((settings) => siteBar.update(settings));
-// While a tap scrolls the page to a section, don't step through the sections it passes.
+addEventListener('hashchange', stopHoverScroll);
+
+// During a topic jump, keep the bars on its destination as the page passes other sections.
 let jumping: { target: HTMLElement; until: number } | undefined;
+const siteBar = mountSiteBar('', 'docs', loadSettings(), (id, reason) => {
+  const target = document.getElementById(id);
+  if (!target) return;
+  if (reason === 'activate') {
+    stopHoverScroll();
+    jumping = { target, until: performance.now() + 1500 };
+    return;
+  }
+  jumping = undefined;
+  hoverReading = true;
+  siteBar.show(id);
+  target.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'instant' : 'smooth' });
+});
+onSettingsChange((settings) => { stopHoverScroll(); siteBar.update(settings); });
 const sectionIds = groups.flatMap((group) => group.sections.map(([id]) => id));
 const sectionElements = sectionIds.map((id) => document.getElementById(id)).filter((section): section is HTMLElement => section !== null);
 let followFrame = 0;
 function follow(): void {
   followFrame = 0;
+  if (hoverReading) return;
   if (jumping) {
     if (Math.abs(jumping.target.getBoundingClientRect().top - 84) > 40 && performance.now() < jumping.until) return;
     jumping = undefined;
