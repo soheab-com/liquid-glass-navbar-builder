@@ -24,11 +24,13 @@ export const groups: readonly Group[] = [
 const settingsIcon = 'M10.32 5.00L10.72 2.49L13.28 2.49L13.68 5.00L15.76 5.86L17.82 4.37L19.63 6.18L18.14 8.24L19.00 10.32L21.51 10.72L21.51 13.28L19.00 13.68L18.14 15.76L19.63 17.82L17.82 19.63L15.76 18.14L13.68 19.00L13.28 21.51L10.72 21.51L10.32 19.00L8.24 18.14L6.18 19.63L4.37 17.82L5.86 15.76L5.00 13.68L2.49 13.28L2.49 10.72L5.00 10.32L5.86 8.24L4.37 6.18L6.18 4.37L8.24 5.86Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z';
 
 export type Position = 'bottom' | 'top' | 'left' | 'right';
+export type TopicHoverMode = 'off' | 'preview' | 'keep';
 
 export interface SiteBarSettings {
   position: Position;
   labels: boolean;
   sectionBar: boolean;
+  topicHover: Partial<Record<string, TopicHoverMode>>;
   settingsItem: boolean;
   separateSettings: boolean;
   layout: 'row' | 'wrap' | 'rows';
@@ -65,7 +67,7 @@ export interface SiteBarSettings {
 }
 
 export const defaultSettings = (): SiteBarSettings => ({
-  position: 'bottom', labels: true, sectionBar: true, settingsItem: true, separateSettings: true,
+  position: 'bottom', labels: true, sectionBar: true, topicHover: {}, settingsItem: true, separateSettings: true,
   layout: 'row', maxRows: 2, overflow: 'menu', overflowTrigger: 'more', keepMoreOpen: true, overflowSurface: 'shared', maxVisible: 0,
   equalWidth: false, equalOverflow: 'natural', transparency: null, background: 'theme', color: '#dce9f6', color2: '#e9dcf6',
   accent: null, unselected: null, selectedIcon: null, unselectedIcon: null,
@@ -88,6 +90,11 @@ export function loadSettings(): SiteBarSettings {
       if (key === 'order') {
         const ids = Array.isArray(value) ? value.filter((id): id is string => groups.some((group) => group.id === id)) : [];
         merged.order = [...new Set([...ids, ...base.order])];
+      } else if (key === 'topicHover') {
+        const entries = typeof value === 'object' && value !== null ? value as Record<string, unknown> : {};
+        merged.topicHover = Object.fromEntries(groups.flatMap((group) => group.sections)
+          .filter(([id]) => entries[id] === 'off' || entries[id] === 'keep')
+          .map(([id]) => [id, entries[id]]));
       } else if (key === 'hidden') {
         merged.hidden = typeof value === 'object' && value !== null ? value : {};
       } else if (['accent', 'unselected', 'selectedIcon', 'unselectedIcon'].includes(key)) {
@@ -147,6 +154,7 @@ function lookOptions(settings: SiteBarSettings): LiquidGlassNavbarOptions {
 }
 
 export interface SiteBar {
+  readonly section: string;
   /** Mark the group and section being read. */
   show(section: string): void;
   update(settings: SiteBarSettings): void;
@@ -158,7 +166,7 @@ export interface SiteBar {
  * `onJump` is called when a bar item leads to a section on this page.
  * The secondary bar reports mouse hover separately from link activation.
  */
-export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: SiteBarSettings, onJump?: (id: string, reason: 'activate' | 'hover') => void): SiteBar {
+export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: SiteBarSettings, onJump?: (id: string, reason: 'activate' | 'preview' | 'keep') => void, onHoverEnd?: () => void): SiteBar {
   let settings = initial;
   let main: LiquidGlassNavbar | undefined;
   let sub: LiquidGlassNavbar | undefined;
@@ -245,29 +253,32 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     const topicNav = subNav;
     let hovered: HTMLAnchorElement | undefined;
     let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+    let leaveTimer: ReturnType<typeof setTimeout> | undefined;
     const clearHover = () => {
       clearTimeout(hoverTimer);
-      hoverTimer = undefined;
+      clearTimeout(leaveTimer);
       hovered = undefined;
     };
+    const endHover = () => {
+      clearHover();
+      leaveTimer = setTimeout(() => { if (subNav === topicNav) onHoverEnd?.(); }, 75);
+    };
     topicNav.addEventListener('pointermove', (event) => {
-      if (event.pointerType !== 'mouse' || event.buttons || topicNav !== subNav) {
-        clearHover();
-        return;
-      }
+      if (event.pointerType !== 'mouse' || event.buttons || topicNav !== subNav) return;
       const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#"]') : null;
-      if (!link || !topicNav.contains(link)) {
-        clearHover();
+      const mode = link ? settings.topicHover[link.hash.slice(1)] ?? 'preview' : 'off';
+      if (!link || !topicNav.contains(link) || mode === 'off') {
+        endHover();
         return;
       }
       if (link === hovered) return;
       clearHover();
       hovered = link;
       hoverTimer = setTimeout(() => {
-        if (subNav === topicNav && link.isConnected && link.matches(':hover')) jump(link, 'hover');
+        if (subNav === topicNav && link.isConnected && link.matches(':hover')) jump(link, mode);
       }, 90);
     });
-    topicNav.addEventListener('pointerleave', clearHover);
+    topicNav.addEventListener('pointerleave', (event) => { if (event.pointerType === 'mouse') endHover(); });
     topicNav.addEventListener('pointerdown', clearHover);
     topicNav.addEventListener('wheel', clearHover, { passive: true });
     placeSub();
@@ -321,7 +332,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     measureRoom();
   }
 
-  function jump(item: NavbarItem, reason: 'activate' | 'hover' = 'activate'): void {
+  function jump(item: NavbarItem, reason: 'activate' | 'preview' | 'keep' = 'activate'): void {
     if (!(item instanceof HTMLAnchorElement)) return;
     const url = new URL(item.href);
     if (url.pathname !== location.pathname || !url.hash) return;
@@ -349,6 +360,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
 
   build();
   return {
+    get section() { return section; },
     show(id) {
       if (id === section) return;
       section = id;

@@ -664,10 +664,12 @@ for (const id of links.keys()) {
 }
 
 // Hover uses the same scroll alignment as a topic link without changing the URL or keyboard focus.
-let hoverReading = false;
+type ReadingPosition = { top: number; section: string };
+let hoverLanding: ReadingPosition | undefined;
+let hoverOrigin: ReadingPosition | undefined;
 const stopHoverScroll = () => {
-  if (!hoverReading) return;
-  hoverReading = false;
+  if (!hoverLanding) return;
+  hoverLanding = hoverOrigin = undefined;
   scrollTo({ top: scrollY, behavior: 'instant' });
 };
 addEventListener('wheel', stopHoverScroll, { passive: true });
@@ -688,10 +690,21 @@ const siteBar = mountSiteBar('', 'docs', loadSettings(), (id, reason) => {
     jumping = { target, until: performance.now() + 1500 };
     return;
   }
+  if (reason === 'keep') hoverOrigin = undefined;
+  else hoverOrigin ??= hoverLanding ?? { top: scrollY, section: siteBar.section };
   jumping = undefined;
-  hoverReading = true;
+  const root = document.scrollingElement ?? document.documentElement;
+  const inset = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+  const top = Math.min(root.scrollHeight - root.clientHeight, Math.max(0, scrollY + target.getBoundingClientRect().top - inset));
+  hoverLanding = { top, section: id };
   siteBar.show(id);
   target.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'instant' : 'smooth' });
+}, () => {
+  if (!hoverOrigin) return;
+  hoverLanding = hoverOrigin;
+  hoverOrigin = undefined;
+  siteBar.show(hoverLanding.section);
+  scrollTo({ top: hoverLanding.top, behavior: reducedMotion() ? 'instant' : 'smooth' });
 });
 onSettingsChange((settings) => { stopHoverScroll(); siteBar.update(settings); });
 const sectionIds = groups.flatMap((group) => group.sections.map(([id]) => id));
@@ -699,7 +712,7 @@ const sectionElements = sectionIds.map((id) => document.getElementById(id)).filt
 let followFrame = 0;
 function follow(): void {
   followFrame = 0;
-  if (hoverReading) return;
+  if (hoverLanding) return;
   if (jumping) {
     if (Math.abs(jumping.target.getBoundingClientRect().top - 84) > 40 && performance.now() < jumping.until) return;
     jumping = undefined;
