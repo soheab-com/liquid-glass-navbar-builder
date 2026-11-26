@@ -238,6 +238,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
 
   function bindHover(topicNav: HTMLElement, current: () => boolean): void {
     let hovered: HTMLAnchorElement | undefined;
+    let touch: { id: number; x: number; y: number } | undefined;
     let clientX = 0, clientY = 0;
     let hoverTimer: ReturnType<typeof setTimeout> | undefined;
     let leaveTimer: ReturnType<typeof setTimeout> | undefined;
@@ -252,8 +253,12 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       leaveTimer = setTimeout(() => { if (current() && revision === hoverRevision) onHoverEnd?.(); }, 110);
     };
     const trackHover = (event: PointerEvent) => {
-      if (event.pointerType === 'touch' || event.buttons || !current()) return;
-      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#"]') : null;
+      if (!current()) return;
+      const dragging = event.pointerType === 'touch' || event.buttons !== 0;
+      if (dragging && (!touch || touch.id !== event.pointerId
+        || Math.hypot(event.clientX - touch.x, event.clientY - touch.y) < 8)) return;
+      const hit = dragging ? document.elementFromPoint(event.clientX, event.clientY) : event.target;
+      const link = hit instanceof Element ? hit.closest<HTMLAnchorElement>('a[href^="#"]') : null;
       const mode = link ? settings.topicHover[link.hash.slice(1)] ?? settings.defaultTopicHover : 'off';
       if (!link || !topicNav.contains(link) || mode === 'off') {
         endHover();
@@ -272,7 +277,21 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     topicNav.addEventListener('pointerover', trackHover);
     topicNav.addEventListener('pointermove', trackHover);
     topicNav.addEventListener('pointerleave', (event) => { if (event.pointerType !== 'touch') endHover(); });
-    topicNav.addEventListener('pointerdown', clearHover);
+    topicNav.addEventListener('pointerdown', (event) => {
+      clearHover();
+      if (settings.swipe && event.isPrimary && event.button === 0 && event.target instanceof Element
+        && event.target.closest('a[href^="#"]')) {
+        touch = { id: event.pointerId, x: event.clientX, y: event.clientY };
+      }
+    });
+    const finishPointer = (event: PointerEvent) => {
+      if (touch?.id !== event.pointerId) return;
+      touch = undefined;
+      endHover();
+    };
+    topicNav.addEventListener('pointerup', finishPointer);
+    topicNav.addEventListener('pointercancel', finishPointer);
+    topicNav.addEventListener('lostpointercapture', finishPointer);
     topicNav.addEventListener('wheel', clearHover, { passive: true });
   }
 
