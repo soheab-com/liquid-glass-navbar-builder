@@ -500,3 +500,22 @@ pre {
   font-weight: 650;
 }
 .dd-release-badge[hidden] { display: none; }
+
+.dd-changelog details + details { margin-top: .6rem; }
+.dd-changelog details {
+  background: var(--glass);
+  border: 1px solid var(--edge);
+  border-radius: 16px;
+}
+.dd-changelog summary {
+  padding: .65rem 1rem;
+  cursor: pointer;
+}
+.dd-changelog summary time {
+  margin-inline-start: .5rem;
+  color: var(--ink-soft);
+  font-size: .88rem;
+}
+.dd-release-notes { padding: 0 1rem .8rem; }
+.dd-release-notes h3 { margin: .45rem 0 .2rem; font-size: 1rem; }
+.dd-release-notes ul { margin-block: .2rem .65rem; }

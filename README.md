@@ -22,7 +22,7 @@ default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src
 
 ## Navbar package
 
-The builder installs the navbar from GitHub at a pinned release (see `package.json`). To try local navbar changes, run `npm link ../liquid-glass-navbar` with the navbar repo next to this one.
+The builder installs the navbar from GitHub at a pinned release (see `package.json`). To try local navbar changes, run `npm link ../liquid-glass-navbar` with the navbar repo next to this one. When updating the pinned release, add its dated notes from the package changelog to `src/docs/changelog.html`.
 
 ## Disclaimer
 

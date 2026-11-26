@@ -1,0 +1,271 @@
+    <section id="changelog">
+      <h2>Changelog</h2>
+      <div class="dd-changelog">
+        <details id="release-v0.11.1" open>
+          <summary><strong>v0.11.1</strong> <time datetime="2026-11-26">November 26, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Fixed</h3>
+            <ul>
+              <li>Keep the exported TypeScript source compatible with <code>exactOptionalPropertyTypes</code> during swipe previews.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.11.0" open>
+          <summary><strong>v0.11.0</strong> <time datetime="2026-11-26">November 26, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Added</h3>
+            <ul>
+              <li>Collapsible numbered rows with a retargetable chevron spring, independent scroll compact state, and a size callback.</li>
+              <li>Whole-item visibility, keyed navbar updates, section-scoped equal widths and overflow caps, viewport-based overflow limits, and icon-only More.</li>
+              <li>CSS color refresh during lens motion, with independent icon halo and label glow controls.</li>
+              <li>Configurable lens style, accent, background, radius, drag blur, and press and drag zoom. The lens can derive its accent from the selected icon.</li>
+              <li>Swipe the lens onto the collapse chevron or More to preview the change, then release to commit it.</li>
+            </ul>
+            <h3>Fixed</h3>
+            <ul>
+              <li>The multi-row lens targets stable layout coordinates during first layout and reflow.</li>
+              <li>Collapsing keeps existing More entries reachable. Opening upper rows prioritizes the persistent tabs when space is tight.</li>
+              <li>Page scrolling stays available beside animated rows, and the lens overlay stays aligned with the collapse chevron.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.10.0">
+          <summary><strong>v0.10.0</strong> <time datetime="2026-11-23">November 23, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Added</h3>
+            <ul>
+              <li>Safari bends the backdrop too. Safari can&#x27;t apply SVG filters through <code>backdrop-filter</code>, so there the glass bends a copy of the elements you mark: <code>data-navbar-refract</code> for a fixed backdrop, <code>data-navbar-refract=&quot;scroll&quot;</code> for content that scrolls under the bar, or your own list through the new <code>refractionSources</code> option. The copy follows scrolling from the scroll event. <code>refreshRefraction()</code> copies the marked content again after it changes.</li>
+              <li>While text, media or an image sits behind a piece of glass, its icons and labels get a soft halo so they stay readable. Set the colours with <code>--lg-nav-halo</code> and <code>--lg-nav-on-dark-halo</code>.</li>
+              <li>Over images, a piece of glass takes the image&#x27;s colour for its rim, top highlight and shadow, and eases back when the image has passed.</li>
+            </ul>
+            <h3>Changed</h3>
+            <ul>
+              <li>The bend follows Liquid Glass on iOS: tinted glass folds the backdrop over in a deep band along its rounded edge, and fully clear glass squeezes it into a wide bevel. Bent glass isn&#x27;t blurred, and fully clear glass doesn&#x27;t soften or dim what&#x27;s behind it.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.9.0">
+          <summary><strong>v0.9.0</strong> <time datetime="2026-11-23">November 23, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Added</h3>
+            <ul>
+              <li><code>closeOnScroll</code> for popovers and <code>overflow</code>: whether scrolling the page closes them. Off by default.</li>
+              <li><code>animations</code> option and <code>setAnimations()</code>: opt-in motion, all springs that can be interrupted and none of it with Reduce Motion. <code>reflow</code> glides items to their new place when they move between the bar and More, change rows or the bar resizes; <code>popovers</code> gives the spring More and anchored popovers open on a little overshoot; <code>tap</code> squishes a pressed tab and bounces a newly selected icon; <code>badges</code> pops badges in and out and pulses them when they change. Pass <code>true</code> for all of them.</li>
+              <li><code>createSpring()</code>, <code>rubberBand()</code> and <code>rubberBanded()</code> are exported, so apps can move in step with the navbar.</li>
+              <li><code>spring</code> option for <code>createAnchoredPopover()</code>: a little overshoot on its open and close.</li>
+              <li><code>overflow.trigger: &#x27;dots&#x27;</code> shows the More button as a vertical ⋮ icon without a label; it keeps &quot;More&quot; (or your <code>label</code>) as its accessible name.</li>
+              <li>Gradual highlight: while the lens moves, only the part of a tab it covers takes the selected colour, so halfway between two tabs you see half of each. Each label and icon gets a copy in the selected colour, clipped to the lens, so it repaints reliably on iOS and isn&#x27;t recoloured by dark-mode extensions. Items that appear mid-swipe, like an expanded More row, are painted too. It clears when the lens settles.</li>
+            </ul>
+            <h3>Changed</h3>
+            <ul>
+              <li>Popovers and More stay open when a press outside them turns into a page scroll; a tap outside still closes them. Set <code>closeOnScroll: true</code> for the old behaviour, closing as the page scrolls.</li>
+              <li>Popovers open and close on a spring instead of a fixed fade, so one closed while still opening turns around from where it is.</li>
+              <li>Compacting no longer moves items in or out of More: it only hides the labels, and the bar keeps the same items as with labels.</li>
+            </ul>
+            <h3>Fixed</h3>
+            <ul>
+              <li>The lens is drawn over the glass of an expanded More row instead of behind it.</li>
+              <li>With More open mid-swipe, a finger off to the side of its items points at the bar again, so the lens comes back down without returning to the bar&#x27;s height.</li>
+              <li>Mid-swipe, magnify follows the finger along the row the lens is in, however far off the bar the finger is held.</li>
+              <li>A swipe keeps its highlight and its place when the page scrolls under it, as Safari does when the finger moves away from the bar. Scroll compact waits until the finger lifts.</li>
+              <li>More opens when a swipe slides level with it, even with the finger above or below the bar, and closes again as soon as the finger is level with another tab (unless it&#x27;s heading into the open row), and when the swipe ends outside it.</li>
+              <li>Glass circles behind the icons of an expanded More row line up with their icons; they were measured while the row was still scaling in.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.8.0">
+          <summary><strong>v0.8.0</strong> <time datetime="2026-11-22">November 22, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Added</h3>
+            <ul>
+              <li><code>showContextActions()</code> options: <code>placement</code> puts the actions before or after the navigation, or in place of one section or item, instead of replacing it all. <code>back</code> adds a Back item that returns to the previous items, with <code>onBack</code>. <code>className</code> and <code>look</code> (colors, background, transparency) give the actions&#x27; pills their own style.</li>
+              <li>Items placed straight in a bar that also has sections get a glass pill of their own.</li>
+            </ul>
+            <h3>Changed</h3>
+            <ul>
+              <li>The README is shorter and points to the new <a href="https://soheab.com/navbar-builder/docs/">docs</a> for the full reference.</li>
+              <li>Scroll compact animates: labels fold away and grow back on a spring, and the tabs and lens resize smoothly. Changing direction mid-way turns it around. Reduce Motion switches at once.</li>
+            </ul>
+            <h3>Fixed</h3>
+            <ul>
+              <li>Tabs no longer ask the browser for a compositing layer each (<code>will-change</code>), which a page with many bars could run out of on iOS.</li>
+              <li>The expanding More row no longer runs past the edges of its boundary; icons wrap onto another row inside it.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.7.0">
+          <summary><strong>v0.7.0</strong> <time datetime="2026-11-22">November 22, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Added</h3>
+            <ul>
+              <li><code>magnify</code> option and <code>setMagnify()</code>: a Dock-style effect where icons near the mouse pointer or a sliding finger grow and rise away from the bar&#x27;s edge, then settle as it moves on. Each icon is driven by its own spring, so passing back and forth never restarts the motion. It is off under Reduce Motion and doesn&#x27;t move the layout, the lens or hit areas.</li>
+            </ul>
+            <h3>Fixed</h3>
+            <ul>
+              <li>The lens and the glass behind each row are now placed to the subpixel, so they are exactly centered on their tabs. Before, they could sit up to 1px off because element offsets round to whole pixels.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.6.0">
+          <summary><strong>v0.6.0</strong> <time datetime="2026-11-22">November 22, 2026</time></summary>
+          <div class="dd-release-notes">
+            <p>All new behavior is opt-in; the single-row bar is unchanged by default.</p>
+            <h3>Added</h3>
+            <ul>
+              <li><code>layout: &#x27;wrap&#x27; | &#x27;rows&#x27;</code> lays the bar out in rows inside one glass surface, or as one centered pill per row. Assign items or sections to rows with <code>data-navbar-row</code>.</li>
+              <li><code>overflow</code> moves items that don&#x27;t fit into a More menu or an expanding row of glass icons (one shared pill or individual icons), with optional <code>maxRows</code> and <code>maxVisible</code> limits. Fitting uses the measured icons, labels, padding and gaps, and reflows on resize. The current tab stays selected behind More. Keep an item in the bar with <code>data-navbar-overflow=&quot;never&quot;</code>.</li>
+              <li>Anchored popovers with a pointer that stays aligned with the trigger when the popover shifts or flips: <code>createPopover()</code> for bar items and <code>createAnchoredPopover()</code> for anything else. They close on Escape, an outside press, another tab or a selection, and return focus when appropriate.</li>
+              <li><code>scrollCompact</code> compacts the bar while scrolling down and restores labels when scrolling up, ignoring small reversals and overscroll.</li>
+              <li><code>setBadge()</code> shows count, dot and status badges with accessible labels.</li>
+              <li><code>showContextActions()</code> and <code>hideContextActions()</code> temporarily swap the navigation for contextual actions, then restore the previously selected tab.</li>
+              <li><code>contrast</code> and <code>setBackdrop()</code> switch to a readable foreground over dark content, also with clear glass, and can add tint over busy content.</li>
+              <li><code>select(item)</code> marks a tab as current without calling <code>onSelect</code>, for restoring a saved tab.</li>
+            </ul>
+            <h3>Changed</h3>
+            <ul>
+              <li>Swipes move in two dimensions when the bar has rows or a More button. Sliding onto More opens it without ending the gesture.</li>
+              <li>Refraction follows the rounded corners of multi-row surfaces.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.5.5">
+          <summary><strong>v0.5.5</strong> <time datetime="2026-11-22">November 22, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Fixed</h3>
+            <ul>
+              <li>Icons and labels are drawn once. The selected color now applies to the real tab, which prevents doubled glyphs in compact and expanded layouts.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.5.4">
+          <summary><strong>v0.5.4</strong> <time datetime="2026-11-22">November 22, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Added</h3>
+            <ul>
+              <li><code>data-navbar-no-swipe</code> on an item or section keeps it out of gestures.</li>
+            </ul>
+            <h3>Changed</h3>
+            <ul>
+              <li>Swipes can start from action items as well as tabs.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.5.3">
+          <summary><strong>v0.5.3</strong> <time datetime="2026-11-22">November 22, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Changed</h3>
+            <ul>
+              <li>Buttons, links and the selected tab use the platform UI font consistently. Customize it with <code>--lg-nav-font</code>.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.5.2">
+          <summary><strong>v0.5.2</strong> <time datetime="2026-11-22">November 22, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Fixed</h3>
+            <ul>
+              <li>Edge-pinned navbars are centered across the full group of pills, including when equal-width tabs grow the bar.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.5.1">
+          <summary><strong>v0.5.1</strong> <time datetime="2026-11-22">November 22, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Added</h3>
+            <ul>
+              <li>Contrast outlines on labels and icons, including the selected tab, for readability over changing backdrops.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.5.0">
+          <summary><strong>v0.5.0</strong> <time datetime="2026-11-22">November 22, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Changed</h3>
+            <ul>
+              <li>Safari uses live blur and tint without a cached copy of the content. Chromium continues to bend the live backdrop.</li>
+            </ul>
+            <h3>Removed</h3>
+            <ul>
+              <li>The copied backdrop and its <code>refractionSource</code> option.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.4.0">
+          <summary><strong>v0.4.0</strong> <time datetime="2026-11-22">November 22, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Added</h3>
+            <ul>
+              <li>The glass rim refracts the live backdrop in Chromium. An optional <code>refractionSource</code> provides a scroll-synced fallback for Safari.</li>
+            </ul>
+            <h3>Changed</h3>
+            <ul>
+              <li>The transparency setting controls both tint and blur. At 100%, only the rim, shadows and refraction remain.</li>
+            </ul>
+            <h3>Fixed</h3>
+            <ul>
+              <li>Color overrides preserve and restore the original inline theme values.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.3.0">
+          <summary><strong>v0.3.0</strong> <time datetime="2026-11-21">November 21, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Added</h3>
+            <ul>
+              <li>Tabs can be links. Put <code>&lt;a href&gt;</code> elements in the bar instead of buttons and every tab is its own page: tapping one, or ending a swipe on it, follows the link. Callbacks get the link (<code>NavbarItem</code> is a button or a link).</li>
+            </ul>
+            <h3>Changed</h3>
+            <ul>
+              <li>Items your own CSS hides (<code>display: none</code>, for example ones moved into a &quot;More&quot; menu) are skipped, the same as items with <code>hidden</code>.</li>
+            </ul>
+            <h3>Fixed</h3>
+            <ul>
+              <li>The highlight layer could make the bar report a wider scroll width than it has, which confused pages that measure the bar to decide what fits.</li>
+              <li>On link tabs the browser&#x27;s own link dragging cancelled a swipe as soon as it started.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.2.0">
+          <summary><strong>v0.2.0</strong> <time datetime="2026-11-21">November 21, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Added</h3>
+            <ul>
+              <li><code>equalWidth</code> option: every tab gets the width of the longest one, so the lens is the same size everywhere. If the bar is too narrow for that, <code>equalWidthOverflow</code> picks what happens: go back to natural widths (the default), cut labels off with &quot;…&quot;, or let the bar grow. <code>setEqualWidth()</code> changes it later.</li>
+              <li><code>colors</code> option and <code>setColors()</code>: pick the color of selected and unselected tabs, and color icons and labels separately.</li>
+              <li>Pulling the lens past the first or last tab stretches like a rubber band instead of stopping dead.</li>
+              <li>Let go mid-swipe and the lens keeps the speed of your finger as it settles.</li>
+            </ul>
+            <h3>Changed</h3>
+            <ul>
+              <li>Dragging feels more like iOS. The lens follows your finger and changes size smoothly between tabs, and it swells into a clear bubble while you hold it. Only the part of a tab under the lens lights up, so halfway between two tabs you get half of each.</li>
+              <li>The current tab&#x27;s color comes from the highlight under the lens (<code>--lg-nav-accent</code>), and every tab underneath uses <code>--lg-nav-muted</code>. CSS that colored <code>[aria-current]</code> buttons directly no longer shows; use <code>colors</code> or those two variables instead.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.1.1">
+          <summary><strong>v0.1.1</strong> <time datetime="2026-11-21">November 21, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Fixed</h3>
+            <ul>
+              <li>The navbar&#x27;s styles hit every button inside it, so a menu or popup placed in the bar looked like a tab. Only the bar&#x27;s own items are styled now.</li>
+            </ul>
+          </div>
+        </details>
+        <details id="release-v0.1.0">
+          <summary><strong>v0.1.0</strong> <time datetime="2026-11-20">November 20, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Added</h3>
+            <ul>
+              <li>A glass tab bar you can drop around your own buttons, with no framework needed.</li>
+              <li>Put it on any edge, split it into sections, and show or hide icons and labels per item.</li>
+              <li>Set your own background and transparency.</li>
+              <li>Tap or swipe to pick a tab; actions like Search sit next to the tabs without becoming one. A swipe can also end on an action.</li>
+              <li><code>onSelect</code>, <code>onAction</code> and <code>onReorder</code> tell your app what happened. With <code>autoSelect: false</code> your router decides which tab is current; call <code>sync()</code> after you change it.</li>
+              <li>Reorder tabs by dragging or with Alt+Arrow keys.</li>
+              <li>Colors come from CSS variables (<code>--lg-nav-accent</code>, <code>--lg-nav-muted</code>, <code>--lg-nav-surface</code> and friends), with light and dark looks in the examples.</li>
+              <li>Respects Reduce Motion and Reduce Transparency.</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+    </section>

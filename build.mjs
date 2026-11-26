@@ -40,6 +40,7 @@ const result = await esbuild.build({
   metafile: true,
   logLevel: 'warning',
 });
+const changelog = await readFile('src/docs/changelog.html', 'utf8');
 for (const page of pages) {
   const [js, info] = Object.entries(result.metafile.outputs).find(([, output]) => output.entryPoint === page.entry);
   const target = path.join(out, page.html);
@@ -47,7 +48,8 @@ for (const page of pages) {
   await mkdir(from, { recursive: true });
   const html = (await readFile(page.template, 'utf8'))
     .replace('{{APP_JS}}', path.relative(from, js))
-    .replace('{{APP_CSS}}', path.relative(from, info.cssBundle));
+    .replace('{{APP_CSS}}', path.relative(from, info.cssBundle))
+    .replace('{{CHANGELOG}}', changelog.trimEnd());
   await writeFile(target, html);
 }
 
