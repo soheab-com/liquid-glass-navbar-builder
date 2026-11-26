@@ -348,11 +348,16 @@ function visibilityTable(): HTMLElement {
 
 function topicHoverSettings(): HTMLElement {
   const group = document.createElement('div');
-  group.className = 'ds-setting';
-  group.innerHTML = `<div class="ds-field"><label for="ds-hover-topic">Topic</label><select id="ds-hover-topic"></select></div>
-    <div class="ds-field"><label for="ds-hover-mode">On hover</label><select id="ds-hover-mode">
+  group.className = 'ds-setting ds-topic-hover';
+  group.innerHTML = `<div class="ds-field"><label for="ds-hover-default">Hover on all topics</label><select id="ds-hover-default">
       <option value="preview">Preview and return</option><option value="keep">Scroll and keep</option><option value="off">Off</option>
+    </select></div>
+    <div class="ds-field"><label for="ds-hover-topic">Topic override</label><select id="ds-hover-topic"></select></div>
+    <div class="ds-field"><label for="ds-hover-mode">On hover for this topic</label><select id="ds-hover-mode">
+      <option value="">Use all-topics setting</option><option value="preview">Preview and return</option>
+      <option value="keep">Scroll and keep</option><option value="off">Off</option>
     </select></div>`;
+  const defaultMode = group.querySelector<HTMLSelectElement>('#ds-hover-default')!;
   const topic = group.querySelector<HTMLSelectElement>('#ds-hover-topic')!;
   const mode = group.querySelector<HTMLSelectElement>('#ds-hover-mode')!;
   for (const sectionGroup of groups) {
@@ -361,11 +366,15 @@ function topicHoverSettings(): HTMLElement {
     for (const [id, label] of sectionGroup.sections) choices.append(new Option(label, id));
     topic.append(choices);
   }
-  const sync = () => { mode.value = settings.topicHover[topic.value] ?? 'preview'; };
+  const sync = () => {
+    defaultMode.value = settings.defaultTopicHover;
+    mode.value = settings.topicHover[topic.value] ?? '';
+  };
+  defaultMode.addEventListener('change', () => change({ defaultTopicHover: defaultMode.value as TopicHoverMode }));
   topic.addEventListener('change', sync);
   mode.addEventListener('change', () => {
     const topicHover = { ...settings.topicHover };
-    if (mode.value === 'preview') delete topicHover[topic.value];
+    if (mode.value === '') delete topicHover[topic.value];
     else topicHover[topic.value] = mode.value as TopicHoverMode;
     change({ topicHover });
   });

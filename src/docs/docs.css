@@ -338,6 +338,7 @@ pre {
   .ds-desc a { font-size: .85rem; font-weight: 600; }
   .ds-setting .ds-help { display: none; }
 }
+.ds-setting.ds-topic-hover { grid-template-columns: minmax(0, 520px); row-gap: .35rem; }
 .ds-name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 .ds-field--check .ds-name { grid-column: 2; }
 .ds-help {

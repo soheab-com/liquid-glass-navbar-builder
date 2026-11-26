@@ -69,18 +69,18 @@
   <main class="dd-main">
     <section id="introduction">
       <h1>Liquid Glass Navbar</h1>
-      <p class="dd-release"><a href="#release-v0.11.1">v0.11.1</a>
-        <span class="dd-release-badge" data-release-published="2026-11-26T01:16:44Z" hidden>New</span>
+      <p class="dd-release"><a href="#release-v0.11.2">v0.11.2</a>
+        <span class="dd-release-badge" data-release-published="2026-11-26T08:40:41Z" hidden>New</span>
       </p>
       <p class="dd-lede">A glass tab bar for the web, in the style of iOS. You write the buttons; it adds the glass, the sliding highlight and the swipe gesture. It's plain TypeScript and CSS, so it works with any framework or none.</p>
       <div data-demo="hero"></div>
-      <p>Every example on this page is the real component. Tap the tabs, drag across them, move your pointer over them, and change the controls; the code below each example updates to match. Hover over an item in the topic bar to preview its section. In <a href="settings/#motion">Bar settings</a>, you can choose which topics keep their scroll position or skip hover. To design a bar visually and copy the result, use the <a href="../">builder</a>.</p>
+      <p>Every example on this page is the real component. Tap the tabs, drag across them, move your pointer over them, and change the controls; the code below each example updates to match. Hover over an item in the topic bar to preview its section. In <a href="settings/#motion">Bar settings</a>, you can set hover behavior for all topics and override individual topics. To design a bar visually and copy the result, use the <a href="../">builder</a>.</p>
     </section>
 
     <section id="install">
       <h2>Install</h2>
       <p>The package is installed from GitHub, not npm. Pin a tag:</p>
-      <pre data-lang="ts"><code>npm install 'git+https://github.com/soheab-com/liquid-glass-navbar.git#v0.11.1'</code></pre>
+      <pre data-lang="ts"><code>npm install 'git+https://github.com/soheab-com/liquid-glass-navbar.git#v0.11.2'</code></pre>
       <p>It ships TypeScript and CSS, so use a bundler such as Vite, esbuild or webpack.</p>
     </section>
 
@@ -169,7 +169,7 @@
       <h2>Rows</h2>
       <p><code>layout: 'wrap'</code> wraps the items into rows inside one glass surface. <code>layout: 'rows'</code> gives each row its own centered pill. The bar measures the real icons, labels, padding and gaps, so every item fits, and it reflows when the space changes. Drag the width slider.</p>
       <p>Put an item or section on a specific row with <code>data-navbar-row="1"</code>, <code>"2"</code> and so on. In a bar with sections, each row holds whole sections. Multi-row layouts apply to bars at the top or bottom, or bars you place yourself.</p>
-      <p>Use <code>collapsible: true</code> to put a chevron in the last row. Tap it to open or close the upper rows, or swipe the lens over it to preview the change. Configure which rows collapse and save the choice with <code>onCollapse</code>. The <a href="https://github.com/soheab-com/liquid-glass-navbar/blob/v0.11.1/README.md#multi-row-navigation">multi-row integration guide</a> also covers responsive More limits, item updates, and lens appearance.</p>
+      <p>Use <code>collapsible: true</code> to put a chevron in the last row. Tap it to open or close the upper rows, or swipe the lens over it to preview the change. Configure which rows collapse and save the choice with <code>onCollapse</code>. The <a href="https://github.com/soheab-com/liquid-glass-navbar/blob/v0.11.2/README.md#multi-row-navigation">multi-row integration guide</a> also covers responsive More limits, item updates, and lens appearance.</p>
       <div data-demo="rows"></div>
     </section>
 

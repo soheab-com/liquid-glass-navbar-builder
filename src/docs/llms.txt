@@ -15,6 +15,6 @@ Install the package from a GitHub tag. A bundler is required because the package
 
 ## Source and examples
 
-- [Public TypeScript API](https://raw.githubusercontent.com/soheab-com/liquid-glass-navbar/v0.11.1/src/index.ts) — see `LiquidGlassNavbarOptions` and `LiquidGlassNavbar`. Use the source tag matching your installed version.
-- [Feature examples](https://raw.githubusercontent.com/soheab-com/liquid-glass-navbar/v0.11.1/examples/features.ts) — real examples for configuring the library.
+- [Public TypeScript API](https://raw.githubusercontent.com/soheab-com/liquid-glass-navbar/v0.11.2/src/index.ts) — see `LiquidGlassNavbarOptions` and `LiquidGlassNavbar`. Use the source tag matching your installed version.
+- [Feature examples](https://raw.githubusercontent.com/soheab-com/liquid-glass-navbar/v0.11.2/examples/features.ts) — real examples for configuring the library.
 - [Changelog](https://soheab.com/navbar-builder/docs/#changelog) — changes by release.

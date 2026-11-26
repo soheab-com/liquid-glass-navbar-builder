@@ -30,6 +30,7 @@ export interface SiteBarSettings {
   position: Position;
   labels: boolean;
   sectionBar: boolean;
+  defaultTopicHover: TopicHoverMode;
   topicHover: Partial<Record<string, TopicHoverMode>>;
   settingsItem: boolean;
   separateSettings: boolean;
@@ -67,7 +68,7 @@ export interface SiteBarSettings {
 }
 
 export const defaultSettings = (): SiteBarSettings => ({
-  position: 'bottom', labels: true, sectionBar: true, topicHover: {}, settingsItem: true, separateSettings: true,
+  position: 'bottom', labels: true, sectionBar: true, defaultTopicHover: 'preview', topicHover: {}, settingsItem: true, separateSettings: true,
   layout: 'row', maxRows: 2, overflow: 'menu', overflowTrigger: 'more', keepMoreOpen: true, overflowSurface: 'shared', maxVisible: 0,
   equalWidth: false, equalOverflow: 'natural', transparency: null, background: 'theme', color: '#dce9f6', color2: '#e9dcf6',
   accent: null, unselected: null, selectedIcon: null, unselectedIcon: null,
@@ -90,10 +91,12 @@ export function loadSettings(): SiteBarSettings {
       if (key === 'order') {
         const ids = Array.isArray(value) ? value.filter((id): id is string => groups.some((group) => group.id === id)) : [];
         merged.order = [...new Set([...ids, ...base.order])];
+      } else if (key === 'defaultTopicHover') {
+        if (value === 'off' || value === 'preview' || value === 'keep') merged.defaultTopicHover = value;
       } else if (key === 'topicHover') {
         const entries = typeof value === 'object' && value !== null ? value as Record<string, unknown> : {};
         merged.topicHover = Object.fromEntries(groups.flatMap((group) => group.sections)
-          .filter(([id]) => entries[id] === 'off' || entries[id] === 'keep')
+          .filter(([id]) => entries[id] === 'off' || entries[id] === 'preview' || entries[id] === 'keep')
           .map(([id]) => [id, entries[id]]));
       } else if (key === 'hidden') {
         merged.hidden = typeof value === 'object' && value !== null ? value : {};
@@ -203,7 +206,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     document.body.append(mainNav);
     main = mountLiquidGlassNavbar(mainNav, {
       ...lookOptions(settings),
-      refractionSources: prose,
+      refractionSources: false,
       labels: settings.labels,
       layout: settings.layout,
       ...(settings.overflow === 'off' ? {} : {
@@ -230,12 +233,6 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     stopWatches.push(() => moreWatch.disconnect());
   }
 
-  // Safari bends a copy of what's behind the bars: the page's headings and text, not the live demos, which change
-  // while you use them and would make the copies large.
-  function prose(): Iterable<Element> {
-    return document.querySelectorAll('main :is(h1, h2, h3, p):not([data-demo] *, .dd-code *, form *)');
-  }
-
   function buildSub(): void {
     if (!settings.sectionBar || page !== 'docs') return;
     subNav = document.createElement('nav');
@@ -246,7 +243,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     document.body.append(subNav);
     // Two rows before More: a group with many sections shows them all on a phone.
     sub = mountLiquidGlassNavbar(subNav, {
-      ...lookOptions(settings), refractionSources: prose, onSelect: (item) => jump(item),
+      ...lookOptions(settings), refractionSources: false, onSelect: (item) => jump(item),
       ...(settings.position === 'top' || settings.position === 'bottom' ? { layout: 'wrap' as const, maxRows: 2 } : {}),
       overflow: true,
     });
@@ -266,7 +263,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
     topicNav.addEventListener('pointermove', (event) => {
       if (event.pointerType !== 'mouse' || event.buttons || topicNav !== subNav) return;
       const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href^="#"]') : null;
-      const mode = link ? settings.topicHover[link.hash.slice(1)] ?? 'preview' : 'off';
+      const mode = link ? settings.topicHover[link.hash.slice(1)] ?? settings.defaultTopicHover : 'off';
       if (!link || !topicNav.contains(link) || mode === 'off') {
         endHover();
         return;
