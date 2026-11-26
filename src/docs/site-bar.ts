@@ -234,12 +234,18 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
   }
 
   const swipeListeners = new AbortController();
+  let activeDrag: { bar: HTMLElement; move: (event: PointerEvent) => void; finish: () => void } | undefined;
   let crossBar: { origin: HTMLElement; pointerId: number } | undefined;
   const barLinkAt = (x: number, y: number): HTMLAnchorElement | undefined => {
     const link = document.elementFromPoint(x, y)?.closest<HTMLAnchorElement>('a[href^="#"]');
     return link && (mainNav?.contains(link) || subNav?.contains(link)) ? link : undefined;
   };
+  window.addEventListener('pointermove', (event) => {
+    if (activeDrag && event.target instanceof Node && !activeDrag.bar.contains(event.target)) activeDrag.move(event);
+  }, { capture: true, signal: swipeListeners.signal });
   window.addEventListener('pointerup', (event) => {
+    activeDrag?.finish();
+    activeDrag = undefined;
     const swipe = crossBar;
     if (swipe?.pointerId !== event.pointerId) return;
     crossBar = undefined;
@@ -250,7 +256,7 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       link.click();
     }
   }, { capture: true, signal: swipeListeners.signal });
-  window.addEventListener('pointercancel', () => { crossBar = undefined; }, { signal: swipeListeners.signal });
+  window.addEventListener('pointercancel', () => { activeDrag?.finish(); activeDrag = crossBar = undefined; }, { signal: swipeListeners.signal });
 
   function bindHover(topicNav: HTMLElement, current: () => boolean, delay = 0): void {
     let hovered: HTMLAnchorElement | undefined;
@@ -310,7 +316,10 @@ export function mountSiteBar(base: string, page: 'docs' | 'settings', initial: S
       if (event.isPrimary && event.button === 0) {
         pointerId = event.pointerId;
         if (settings.swipe && event.pointerType !== 'touch' && event.target instanceof Element
-          && event.target.closest('a[href^="#"]')) dragStart = { x: event.clientX, y: event.clientY };
+          && event.target.closest('a[href^="#"]')) {
+          dragStart = { x: event.clientX, y: event.clientY };
+          activeDrag = { bar: topicNav, move: trackHover, finish: finishDrag };
+        }
       }
     });
     const finishDrag = () => {
