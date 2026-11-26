@@ -8,7 +8,7 @@
     "update-navbar": "node scripts/update-navbar-release.mjs"
   },
   "dependencies": {
-    "@soheab-com/liquid-glass-navbar": "github:soheab-com/liquid-glass-navbar#v0.12.0",
+    "@soheab-com/liquid-glass-navbar": "github:soheab-com/liquid-glass-navbar#v1.0.1",
     "highlight.js": "11.12.0"
   },
   "devDependencies": {

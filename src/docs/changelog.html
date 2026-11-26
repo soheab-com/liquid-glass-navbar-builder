@@ -1,7 +1,30 @@
     <section id="changelog">
       <h2>Changelog</h2>
       <div class="dd-changelog">
-        <details id="release-v0.12.0" open>
+        <details id="release-v1.0.1" open>
+          <summary><strong>v1.0.1</strong> <time datetime="2026-11-26">November 26, 2026</time></summary>
+          <div class="dd-release-notes">
+            <h3>Fixed</h3>
+            <ul><li>Dragging from one bar onto another bar of the same <code>hoverNavigation.group</code> now shows where you are: the bar under the pointer highlights the item and moves its lens there, and the bar the drag started in steps its lens back until the pointer returns.</li><li>Installing from a Git tag builds <code>dist/</code>, so <code>npm install 'git+https://github.com/soheab-com/liquid-glass-navbar.git#v1.0.1'</code> works again.</li></ul>
+            <p><a href="https://github.com/soheab-com/liquid-glass-navbar/releases/tag/v1.0.1">Release on GitHub</a></p>
+          </div>
+        </details>
+        <details id="release-v1.0.0" open>
+          <summary><strong>v1.0.0</strong> <time datetime="2026-11-26">November 26, 2026</time></summary>
+          <div class="dd-release-notes">
+            <p>The first stable release, and the first published to npm.</p>
+            <h3>Added</h3>
+            <ul><li>Published to npm as <code>@soheab-com/liquid-glass-navbar</code>, with compiled ESM, TypeScript declarations and <code>navbar.css</code> in <code>dist/</code>. The JavaScript no longer needs a bundler, and importing it touches no browser globals, so it is safe during server rendering.</li><li><code>@soheab-com/liquid-glass-navbar/react</code> and <code>/vue</code> entry points with a <code>useLiquidGlassNavbar</code> hook and composable. React and Vue are optional peer dependencies; the core has no runtime dependencies.</li><li>Arrow keys move focus between the bar's items, More and the collapse chevron in screen order, Up and Down move between rows, and Home and End jump to the ends. Inside an open More menu, Up and Down move between its items. Turn this off with <code>keyboardNavigation: false</code>.</li><li>Alt+Arrow reordering is announced to screen readers; <code>reorderAnnouncement</code> translates the message.</li><li>A focus ring on bar items, coloured by <code>--lg-nav-focus</code>.</li><li>Increase Contrast (<code>prefers-contrast: more</code>) gives the bar a nearly opaque surface, a solid rim, a thicker lens ring and an underlined current tab.</li><li>Forced colours modes draw the bar, lens and selected item with system colours.</li><li>Firefox gets refraction: like Safari, it bends a copy of the backdrop elements marked <code>data-navbar-refract</code>.</li><li><code>overflow.perRow</code> and <code>overflow.rowLimits</code> give each numbered row its own More and limit, and <code>openOverflow({ row })</code> opens a specific row's menu.</li><li><code>data-navbar-max-visible</code> accepts breakpoints such as <code>"0:2 900:none"</code>.</li><li><code>update()</code> accepts <code>layout</code>, <code>maxRows</code>, and <code>collapsible</code>, so the bar can change shape without remounting.</li><li><code>onCollapseEnd</code> fires when a committed collapse reaches its final layout.</li><li><code>data-navbar-collapsed-current</code> marks where the lens rests while the selected tab's row is collapsed.</li><li><code>viewTransitionName</code> keeps the bar live during same-document View Transitions.</li><li><code>warnOnMultipleCurrent</code> logs a warning when more than one item is current.</li></ul>
+            <h3>Changed</h3>
+            <ul><li>Licensed under the Mozilla Public License 2.0.</li><li>Engines are chosen by feature detection, apart from one isolated check for whether <code>backdrop-filter</code> draws SVG filters, which only Chromium does and no engine reports.</li><li>In copy mode (Safari and Firefox), a bar with no marked backdrop keeps its frosted blur instead of turning sharp and flat.</li><li>Section caps no longer count <code>data-navbar-overflow="never"</code> items, matching <code>maxVisible</code>.</li></ul>
+            <h3>Fixed</h3>
+            <ul><li>Alt+Arrow reordering follows the screen in right-to-left bars.</li><li><code>destroy()</code> no longer leaves empty <code>class</code> and <code>style</code> attributes on the nav and its sections.</li><li>Collapsing a row no longer gives its overflow budget to the remaining rows.</li><li>Re-laying out during a collapse no longer makes items in the remaining row disappear.</li><li>Equal-width sections fit the available width and truncate long labels.</li><li>Mounting and <code>update()</code> choose the same item when more than one is current.</li><li><code>update()</code> keeps visibility set with <code>setItemHidden()</code> unless the replacement sets <code>hidden</code> or <code>data-navbar-hidden="false"</code>.</li><li>Tapping or pressing More or the collapse chevron moves the lens to it.</li><li>Collapsing the row that holds the selected tab keeps the lens visible in the remaining row.</li><li>The collapse toggle exposes only its current label.</li></ul>
+            <h3>Performance</h3>
+            <ul><li>Rim maps are computed from one quadrant (about six times faster for large bars) and cached by size, corner radius and clearness.</li><li>Window resizes lay the bar out at most once per frame. Refraction work stops and moving springs settle while the page is hidden.</li></ul>
+            <p><a href="https://github.com/soheab-com/liquid-glass-navbar/releases/tag/v1.0.0">Release on GitHub</a></p>
+          </div>
+        </details>
+        <details id="release-v0.12.0">
           <summary><strong>v0.12.0</strong> <time datetime="2026-11-26">November 26, 2026</time></summary>
           <div class="dd-release-notes">
             <h3>Added</h3>
@@ -12,7 +35,7 @@
             </ul>
           </div>
         </details>
-        <details id="release-v0.11.2" open>
+        <details id="release-v0.11.2">
           <summary><strong>v0.11.2</strong> <time datetime="2026-11-26">November 26, 2026</time></summary>
           <div class="dd-release-notes">
             <h3>Fixed</h3>
