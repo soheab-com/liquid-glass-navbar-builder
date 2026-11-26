@@ -55,6 +55,8 @@ export interface Config {
   contrast: boolean;
   adaptiveTint: boolean;
   contextActions: boolean;
+  hover: 'off' | 'preview' | 'keep';
+  hoverDelay: number;
   magnify: boolean;
   animations: boolean;
   items: Item[];
@@ -107,6 +109,8 @@ export const defaultConfig = (): Config => ({
   contrast: false,
   adaptiveTint: false,
   contextActions: false,
+  hover: 'off',
+  hoverDelay: 0,
   magnify: false,
   animations: false,
   items: [
@@ -179,6 +183,8 @@ export function parseConfig(value: unknown): Config {
     contrast: bool(raw.contrast, base.contrast),
     adaptiveTint: bool(raw.adaptiveTint, base.adaptiveTint),
     contextActions: bool(raw.contextActions, base.contextActions),
+    hover: pick(['off', 'preview', 'keep'] as const, raw.hover, base.hover),
+    hoverDelay: clamp(raw.hoverDelay, 0, 5000, base.hoverDelay),
     magnify: bool(raw.magnify, base.magnify),
     animations: bool(raw.animations, base.animations),
     items: items.length > 0 ? items : base.items,

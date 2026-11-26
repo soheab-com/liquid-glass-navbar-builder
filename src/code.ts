@@ -86,6 +86,11 @@ export function scriptFor(config: Config): string {
     if (config.maxRows !== null && config.layout !== 'row') options.push(`  maxRows: ${config.maxRows},`);
   }
   if (config.animations) options.push('  animations: true, // or { reflow, popovers, tap, badges }');
+  if (config.hover !== 'off') {
+    options.push('  hoverNavigation: {', `    delay: ${config.hoverDelay},`, `    keep: ${config.hover === 'keep'},`,
+      '    onPreview(button) {', '      // Preview the section for this button.', '    },',
+      '    onPreviewEnd() {', '      // Restore the previous position when a preview is cancelled.', '    },', '  },');
+  }
   if (config.magnify) options.push('  magnify: true, // or { scale: 1.4, lift: 10, range: 110 }');
   if (config.scrollCompact) options.push('  scrollCompact: true, // or { source: yourScrollingElement }');
   if (config.contrast) {

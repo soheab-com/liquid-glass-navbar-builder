@@ -79,6 +79,8 @@ function renderPreview(): void {
     : '';
   const background = backgroundValue(config);
   const colors = colorsValue(config);
+  const stories = [...sample.querySelectorAll<HTMLElement>('.nb-story')];
+  let beforeHover: number | undefined;
   navbar = mountLiquidGlassNavbar(nav, {
     position: config.position,
     labels: config.labels,
@@ -92,9 +94,27 @@ function renderPreview(): void {
     ...(config.overflow !== 'none' && config.maxRows !== null && config.layout !== 'row' ? { maxRows: config.maxRows } : {}),
     ...(overflowValue(config) ? { overflow: { ...overflowValue(config), boundary: frame } } : {}),
     ...(config.scrollCompact ? { scrollCompact: { source: sample } } : {}),
+    ...(config.hover === 'off' ? {} : {
+      hoverNavigation: {
+        delay: config.hoverDelay,
+        keep: config.hover === 'keep',
+        onPreview(item) {
+          const index = buttons.findIndex((button) => button === item);
+          const story = stories[index % stories.length];
+          if (!story) return;
+          beforeHover ??= sample.scrollTop;
+          sample.scrollTo({ top: sample.scrollTop + story.getBoundingClientRect().top - sample.getBoundingClientRect().top, behavior: 'instant' });
+        },
+        onPreviewEnd() {
+          if (beforeHover !== undefined) sample.scrollTo({ top: beforeHover, behavior: 'instant' });
+          beforeHover = undefined;
+        },
+      },
+    }),
     ...(config.magnify ? { magnify: true } : {}),
     ...(config.animations ? { animations: true } : {}),
     ...(config.contrast ? { contrast: { adaptiveTint: config.adaptiveTint } } : {}),
+    onSelect() { beforeHover = undefined; },
     onAction(button) {
       if (button.dataset.context === 'done') {
         navbar?.hideContextActions();
@@ -364,6 +384,9 @@ function syncControls(): void {
   element('#adaptive-tint', HTMLInputElement).checked = config.adaptiveTint;
   element('#adaptive-tint-row', HTMLElement).hidden = !config.contrast;
   element('#context-actions', HTMLInputElement).checked = config.contextActions;
+  element('#hover-navigation', HTMLSelectElement).value = config.hover;
+  element('#hover-delay', HTMLInputElement).value = String(config.hoverDelay);
+  element('#hover-delay-row', HTMLElement).hidden = config.hover === 'off';
   element('#magnify', HTMLInputElement).checked = config.magnify;
   element('#animations', HTMLInputElement).checked = config.animations;
   element('#try-context', HTMLButtonElement).hidden = !config.contextActions;
@@ -399,7 +422,7 @@ iconColors.addEventListener('change', () => update({ iconColors: iconColors.chec
 bindColor('selected-icon', 'selectedIcon');
 bindColor('unselected-icon', 'unselectedIcon');
 
-function bindChoice<K extends 'layout' | 'overflow' | 'expandSurface'>(id: string, key: K, values: readonly Config[K][]): void {
+function bindChoice<K extends 'layout' | 'overflow' | 'expandSurface' | 'hover'>(id: string, key: K, values: readonly Config[K][]): void {
   const select = element(`#${id}`, HTMLSelectElement);
   select.addEventListener('change', () => {
     const value = values.find((entry) => entry === select.value);
@@ -407,6 +430,9 @@ function bindChoice<K extends 'layout' | 'overflow' | 'expandSurface'>(id: strin
   });
 }
 bindChoice('layout', 'layout', layouts);
+bindChoice('hover-navigation', 'hover', ['off', 'preview', 'keep'] as const);
+const hoverDelay = element('#hover-delay', HTMLInputElement);
+hoverDelay.addEventListener('change', () => update({ hoverDelay: Math.min(5000, Math.max(0, Number(hoverDelay.value))) }));
 bindChoice('overflow', 'overflow', overflowChoices);
 bindChoice('expand-surface', 'expandSurface', expandSurfaces);
 const overflowTrigger = element('#overflow-trigger', HTMLSelectElement);

@@ -7,7 +7,7 @@
     "build": "node build.mjs"
   },
   "dependencies": {
-    "@soheab-com/liquid-glass-navbar": "github:soheab-com/liquid-glass-navbar#v0.11.2",
+    "@soheab-com/liquid-glass-navbar": "github:soheab-com/liquid-glass-navbar#v0.12.0",
     "highlight.js": "11.12.0"
   },
   "devDependencies": {
